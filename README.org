@@ -1,0 +1,41 @@
+* Partitions
+** BIOS
+Here is the way the different will be mounted and formated for a BIOS system.
+| Disk      | Mount Point | Size                      | FS type |
+|-----------+-------------+---------------------------+---------|
+| /dev/sda1 | /boot       | 256M                      | ext4    |
+| /dev/sda2 |             | 2G                        | swap    |
+| /dev/sda3 | /           | Space left (at least 10G) | ext4    |
+First of all, we format the partitions:
+#+BEGIN_SRC shell
+  mkfs.ext4 /dev/sda1
+  mkfs.ext4 /dev/sda3
+  mkfs.ext4 /dev/sda4
+#+END_SRC
+Then, we activate the swap partition:
+#+BEGIN_SRC shell
+  mkswap /dev/sda2
+  swapon /dev/sda2
+#+END_SRC
+Finally we mount the partitions in the =/mnt/ylfs= directory:
+#+BEGIN_SRC shell
+  export YLFS=/mnt/ylfs
+  mkdir -pv "$YLFS"
+  mount /dev/sda3 "$YLFS"
+  mkdir $YLFS/boot
+  mount /dev/sda1 $YLFS/boot
+#+END_SRC
+** TODO - UEFI
+* Packages
+** Preparation
+We prepare the directories for the sources and patches:
+#+BEGIN_SRC shell
+  mkdir -v $YLFS/sources
+  mkdir -pv $YLFS/sources/{patches,files,packages}
+#+END_SRC
+We create a new user for the installation of tools:
+#+BEGIN_SRC shell
+  groupadd ylfs
+  useradd -s /bin/bash -g ylfs -m -k /dev/null ylfs
+  passwd ylfs
+#+END_SRC
