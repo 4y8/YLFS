@@ -9,6 +9,7 @@
       - [[#i686][i686]]
       - [[#arm][ARM]]
   - [[#cross-tools][Cross tools]]
+    - [[#toybox][Toybox]]
     - [[#linux][Linux]]
 
 * Partitions
@@ -45,7 +46,12 @@ Prepare the directories for the sources and patches:
 #+BEGIN_SRC shell
   mkdir -v $YLFS/sources
   mkdir -v $YLFS/cross-tools
+  mkdir -v $YLFS/tools
   mkdir -v $YLFS/sources/{patches,files,packages}
+#+END_SRC
+Link directories:
+#+BEGIN_SRC shell
+  ln -sv $LFS/tools /
 #+END_SRC
 Create a new user for the installation of tools:
 #+BEGIN_SRC shell
@@ -64,42 +70,54 @@ Login as the =ylfs= user:
 #+BEGIN_SRC shell
   su - ylfs
 #+END_SRC
-Clear compilation flags:
+Clear compilation C flags:
 #+BEGIN_SRC shell
   unset CFLAGS
   unset CXXFLAGS
+#+END_SRC
+Add multicore compilation:
+#+BEGIN_SRC shell
+  export MAKEFLAGS='-j 4'
 #+END_SRC
 *** CPU configuration
 **** x86_64
 Set build options for 64 bit CPUs:
 #+BEGIN_SRC shell
-  TARGET="x86_64-ylfs-linux-musl"
-  ARCH="x86"
-  CPU="x86-64"
+  export TARGET="x86_64-ylfs-linux-musl"
+  export ARCH="x86"
+  export CPU="x86-64"
 #+END_SRC
 **** i686 
 Set build options for 32 bit CPUs:
 #+BEGIN_SRC shell
-  TARGET="i686-ylfs-linux-musl"
-  ARCH="x86"
-  CPU="i686"
+  export TARGET="i686-ylfs-linux-musl"
+  export ARCH="x86"
+  export CPU="i686"
 #+END_SRC
 **** ARM
 ***** armv7
 Set build options for armv7 CPUs:
 #+BEGIN_SRC shell
-  TARGET="armv7l-ylfs-linux-musl"
-  ARCH="arm"
-  CPU="armv7-a"
+  export TARGET="armv7l-ylfs-linux-musl"
+  export ARCH="arm"
+  export CPU="armv7-a"
 #+END_SRC
 ***** armv6
 Set build options for armv6 CPUs:
 #+BEGIN_SRC shell
-  TARGET="armv6l-ylfs-linux-musl"
-  ARCH="arm"
-  CPU="armv6"
+  export TARGET="armv6l-ylfs-linux-musl"
+  export ARCH="arm"
+  export CPU="armv6"
 #+END_SRC
 ** Cross tools
+*** Toybox
+Source: https://busybox.net/downloads/busybox-1.32.0.tar.bz2
+Build:
+#+BEGIN_SRC shell
+  CROSS_COMPILE=CPU make defconfig
+  make
+  PREFIX=$YLFS/cross-tools make install
+#+END_SRC
 *** Linux
 Source: https://cdn.kernel.org/pub/linux/kernel/v5.x/linux-5.8.1.tar.xz
 Clean sources:
