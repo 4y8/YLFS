@@ -11,6 +11,7 @@
   - [[#cross-tools][Cross tools]]
     - [[#toybox][Toybox]]
     - [[#linux][Linux]]
+    - [[#gcc][GCC]]
 
 * Partitions
 ** BIOS
@@ -117,10 +118,12 @@ Download and extract the sources:
   tar -xf toybox-0.8.3.tar.gz
   cd toybox-0.8.3
 #+END_SRC
-Build:
+Build, before installation we need to create an executable named =toybox= since
+=make= doesn't generate it and instead generate =toybox-$TARGET=:
 #+BEGIN_SRC shell
   CROSS_COMPILE=$CPU make defconfig
   make
+  mv "toybox-$TARGET" toybox
   PREFIX=$YLFS/cross-tools make install
 #+END_SRC
 *** Linux
@@ -146,4 +149,31 @@ Clean:
 Install headers:
 #+BEGIN_SRC shell
   cp -rv usr/include/* /cross-tools/${TARGET}/include
+#+END_SRC
+*** GCC
+Source: https://ftp.gnu.org/gnu/gcc/gcc-10.2.0/gcc-10.2.0.tar.xz
+Dependencies: 
+- https://www.mpfr.org/mpfr-current/mpfr-4.1.0.tar.xz
+- https://ftp.gnu.org/gnu/mpc/mpc-1.1.0.tar.gz
+- https://ftp.gnu.org/gnu/gmp/gmp-6.2.0.tar.xz
+Download sources:
+#+BEGIN_SRC shell
+  wget https://ftp.gnu.org/gnu/gmp/gmp-6.2.0.tar.xz
+  wget https://ftp.gnu.org/gnu/mpc/mpc-1.1.0.tar.gz
+  wget https://www.mpfr.org/mpfr-current/mpfr-4.1.0.tar.xz
+  wget https://ftp.gnu.org/gnu/gcc/gcc-10.2.0/gcc-10.2.0.tar.xz
+#+END_SRC
+Extract GCC:
+#+BEGIN_SRC shell
+tar -xf gcc-10.2.0.tar.xz
+cd gcc-10.2.0
+#+END_SRC
+Extract dependencies:
+#+BEGIN_SRC shell
+tar -xf ../mpfr-4.1.0.tar.xz
+mv -v mpfr-4.1.0 mpfr
+tar -xf ../gmp-6.2.0.tar.xz
+mv -v gmp-6.2.0 gmp
+tar -xf ../mpc-1.1.0.tar.gz
+mv -v mpc-1.1.0 mpc
 #+END_SRC
