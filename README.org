@@ -1,3 +1,16 @@
+* Table of Content :TOC_4:
+- [[#partitions][Partitions]]
+  - [[#bios][BIOS]]
+  - [[#uefi][UEFI]]
+- [[#packages][Packages]]
+  - [[#preparation][Preparation]]
+    - [[#cpu-configuration][CPU configuration]]
+      - [[#x86_64][x86_64]]
+      - [[#i686][i686]]
+      - [[#arm][ARM]]
+  - [[#cross-tools][Cross tools]]
+    - [[#linux][Linux]]
+
 * Partitions
 ** BIOS
 Here is the way the different will be mounted and formated for a BIOS system.
@@ -6,18 +19,18 @@ Here is the way the different will be mounted and formated for a BIOS system.
 | /dev/sda1 | /boot       | 256M                      | ext4    |
 | /dev/sda2 |             | 2G                        | swap    |
 | /dev/sda3 | /           | Space left (at least 10G) | ext4    |
-First of all, we format the partitions:
+First of all, format the partitions:
 #+BEGIN_SRC shell
   mkfs.ext4 /dev/sda1
   mkfs.ext4 /dev/sda3
   mkfs.ext4 /dev/sda4
 #+END_SRC
-Then, we activate the swap partition:
+Then, activate the swap partition:
 #+BEGIN_SRC shell
   mkswap /dev/sda2
   swapon /dev/sda2
 #+END_SRC
-Finally we mount the partitions in the =/mnt/ylfs= directory:
+Finally, mount the partitions in the =/mnt/ylfs= directory:
 #+BEGIN_SRC shell
   export YLFS=/mnt/ylfs
   mkdir -pv "$YLFS"
@@ -25,17 +38,71 @@ Finally we mount the partitions in the =/mnt/ylfs= directory:
   mkdir $YLFS/boot
   mount /dev/sda1 $YLFS/boot
 #+END_SRC
-** TODO - UEFI
+** TODO UEFI
 * Packages
 ** Preparation
-We prepare the directories for the sources and patches:
+Prepare the directories for the sources and patches:
 #+BEGIN_SRC shell
   mkdir -v $YLFS/sources
-  mkdir -pv $YLFS/sources/{patches,files,packages}
+  mkdir -v $YLFS/cross-tools
+  mkdir -v $YLFS/sources/{patches,files,packages}
 #+END_SRC
-We create a new user for the installation of tools:
+Create a new user for the installation of tools:
 #+BEGIN_SRC shell
   groupadd ylfs
   useradd -s /bin/bash -g ylfs -m -k /dev/null ylfs
   passwd ylfs
+#+END_SRC
+Adapt the permissions of the build directories:
+#+BEGIN_SRC shell
+  chown -v  ylfs $YLFS/cross-tools
+  chown -vR ylfs $YLFS/sources
+  chmod -v  a+wt $YLFS/sources
+  chown -v  ylfs $YLFS/tools
+#+END_SRC
+Login as the =ylfs= user:
+#+BEGIN_SRC shell
+  su - ylfs
+#+END_SRC
+Clear compilation flags:
+#+BEGIN_SRC shell
+  unset CFLAGS
+  unset CXXFLAGS
+#+END_SRC
+*** CPU configuration
+**** x86_64
+Set build options for 64 bit CPUs:
+#+BEGIN_SRC shell
+  TARGET="x86_64-ylfs-linux-musl"
+  ARCH="x86"
+  CPU="x86-64"
+#+END_SRC
+**** i686 
+Set build options for 32 bit CPUs:
+#+BEGIN_SRC shell
+  TARGET="i686-ylfs-linux-musl"
+  ARCH="x86"
+  CPU="i686"
+#+END_SRC
+**** ARM
+***** armv7
+Set build options for armv7 CPUs:
+#+BEGIN_SRC shell
+  TARGET="armv7l-ylfs-linux-musl"
+  ARCH="arm"
+  CPU="armv7-a"
+#+END_SRC
+***** armv6
+Set build options for armv6 CPUs:
+#+BEGIN_SRC shell
+  TARGET="armv6l-ylfs-linux-musl"
+  ARCH="arm"
+  CPU="armv6"
+#+END_SRC
+** Cross tools
+*** Linux
+Source: https://cdn.kernel.org/pub/linux/kernel/v5.x/linux-5.8.1.tar.xz
+Clean sources:
+#+BEGIN_SRC shell
+  make mrproper
 #+END_SRC
