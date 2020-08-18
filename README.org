@@ -11,8 +11,10 @@
   - [[#cross-tools][Cross tools]]
     - [[#binutils][Binutils]]
     - [[#linux][Linux]]
-    - [[#gcc][GCC]]
+    - [[#gcc-static][GCC Static]]
     - [[#musl][Musl]]
+    - [[#gcc-final][GCC Final]]
+    - [[#file][File]]
   - [[#final][Final]]
     - [[#toybox][Toybox]]
 
@@ -83,6 +85,10 @@ Add multicore compilation:
 #+BEGIN_SRC shell
   export MAKEFLAGS="-j 4"
 #+END_SRC
+Add future tools to the path:
+#+BEGIN_SRC shell
+  PATH=/cross-tools:$PATH
+#+END_SRC
 *** CPU configuration
 **** x86_64
 Set build options for 64 bit CPUs:
@@ -115,7 +121,7 @@ Set build options for armv6 CPUs:
 #+END_SRC
 ** Cross tools
 *** Binutils
-Source: https://ftp.gnu.org/gnu/binutils/binutils-2.35.tar.xz
+Source: https://ftp.gnu.org/gnu/binutils/binutils-2.35.tar.xz \\
 Download and extract the sources:
 #+BEGIN_SRC shell
   wget https://ftp.gnu.org/gnu/binutils/binutils-2.35.tar.xz
@@ -151,7 +157,7 @@ Install:
   make install
 #+END_SRC
 *** Linux
-Source: https://cdn.kernel.org/pub/linux/kernel/v5.x/linux-5.8.1.tar.xz
+Source: https://cdn.kernel.org/pub/linux/kernel/v5.x/linux-5.8.1.tar.xz \\
 Download and extract the sources:
 #+BEGIN_SRC shell
   wget https://cdn.kernel.org/pub/linux/kernel/v5.x/linux-5.8.1.tar.xz
@@ -164,18 +170,17 @@ Clean sources:
 #+END_SRC
 Build headers:
 #+BEGIN_SRC shell
-  make headers_check
+  ARCH=$YLFS_ARCH make headers_check
 #+END_SRC
-Clean:
+Install and clean:
 #+BEGIN_SRC shell
+  ARCH=$YLFS_ARCH make headers
   rm usr/include/Makefile
-#+END_SRC
-Install headers:
-#+BEGIN_SRC shell
+  mkdir -pv /cross-tools/${YLFS_TARGET}/include
   cp -rv usr/include/* /cross-tools/${YLFS_TARGET}/include
 #+END_SRC
-*** GCC
-Source: https://ftp.gnu.org/gnu/gcc/gcc-10.2.0/gcc-10.2.0.tar.xz
+*** GCC Static
+Source: https://ftp.gnu.org/gnu/gcc/gcc-10.2.0/gcc-10.2.0.tar.xz \\
 Dependencies:
 - https://www.mpfr.org/mpfr-current/mpfr-4.1.0.tar.xz
 - https://ftp.gnu.org/gnu/mpc/mpc-1.1.0.tar.gz
@@ -205,7 +210,7 @@ Create the build directory:
 #+BEGIN_SRC shell
   mkdir -v build && cd build
 #+END_SRC
-Configure the compiler:
+Configure sources:
 #+BEGIN_SRC shell
   CFLAGS='-g0 -O0' \
   CXXFLAGS='-g0 -O0' \
@@ -221,6 +226,7 @@ Configure the compiler:
             --disable-libatomic  --disable-libstdcxx \
             --enable-languages=c --disable-libquadmath \
             --disable-libsanitizer --with-arch=${YLFS_CPU} \
+            --disable-decimal-float --enable-clocale=generic
 #+END_SRC
 Build and install the only the minimum needed:
 #+BEGIN_SRC shell
@@ -228,7 +234,7 @@ Build and install the only the minimum needed:
   make install-gcc install-target-libgcc
 #+END_SRC
 *** Musl
-Source: https://www.musl-libc.org/releases/musl-1.2.1.tar.gz
+Source: https://www.musl-libc.org/releases/musl-1.2.1.tar.gz \\
 Download and extract the sources:
 #+BEGIN_SRC shell
   wget https://www.musl-libc.org/releases/musl-1.2.1.tar.gz
@@ -249,7 +255,69 @@ Build and install:
 Create the missing directory and link the library:
 #+BEGIN_SRC shell
   mkdir -v /cross-tools/usr
-  ln -sv ../include  /cross-tools/usr/include
+  ln -sv ../include /cross-tools/usr/include
+#+END_SRC
+*** GCC Final
+Sources: see GCC Static\\
+Delete the old build directory:
+#+BEGIN_SRC shell
+  rm -rf build/
+#+END_SRC
+Use =lib= instead of =lib64=:
+#+BEGIN_SRC shell
+  sed -i '/m64=/s/lib64/lib/' gcc/gcc/config/i386/t-linux64
+  sed -i 's/lib64/lib/'       gcc/gcc/config/i386/linux64.h
+#+END_SRC
+Create the build directory:
+#+BEGIN_SRC shell
+  mkdir -v build && cd build
+#+END_SRC
+Configure sources:
+#+BEGIN_SRC shell
+  AR=ar LDFLAGS="-Wl,-rpath,/cross-tools/lib" \
+  ../configure \
+      --prefix=/cross-tools \
+      --build=${YLFS_HOST} \
+      --host=${YLFS_HOST} \
+      --target=${YLFS_TARGET} \
+      --disable-multilib \
+      --with-sysroot=/cross-tools \
+      --disable-nls \
+      --enable-shared \
+      --enable-languages=c,c++ \
+      --enable-threads=posix \
+      --enable-clocale=generic \
+      --enable-libstdcxx-time \
+      --enable-fully-dynamic-string \
+      --disable-symvers \
+      --disable-libsanitizer \
+      --disable-lto-plugin \
+      --disable-libssp
+#+END_SRC
+Build:
+#+BEGIN_SRC shell
+  make AS_FOR_TARGET="${MLFS_TARGET}-as" \
+       LD_FOR_TARGET="${MLFS_TARGET}-ld"
+#+END_SRC
+Install
+#+BEGIN_SRC shell
+  make install
+#+END_SRC
+*** File
+Source ftp://ftp.astron.com/pub/file/file-5.39.tar.gz \\
+Download and extract the sources:
+#+BEGIN_SRC shell
+  wget ftp://ftp.astron.com/pub/file/file-5.39.tar.gz
+  tar -xf file-5.39.tar.gz
+  cd file-5.39
+#+END_SRC
+Configure sources:
+#+BEGIN_SRC shell
+  ./configure --prefix=/cross-tools --disable-libseccomp
+#+END_SRC
+Build and install:
+#+BEGIN_SRC shell
+  make && make install
 #+END_SRC
 ** Final
 *** Toybox
