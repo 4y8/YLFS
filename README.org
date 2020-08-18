@@ -38,6 +38,10 @@
       - [[#check-tool-chain-1][Check tool chain]]
       - [[#clean-1][Clean]]
     - [[#libstdcxx][Libstdcxx]]
+    - [[#binutils-22][Binutils 2/2]]
+    - [[#gcc-22][GCC 2/2]]
+      - [[#fix-gcc-linker-1][Fix GCC linker]]
+      - [[#build-1][Build]]
   - [[#final][Final]]
     - [[#toybox][Toybox]]
 
@@ -189,7 +193,7 @@ Download and extract the sources:
 #+END_SRC
 Clean sources:
 #+BEGIN_SRC shell
-  make mrproper
+  ARCH=${YLFS_ARCH} make mrproper
 #+END_SRC
 Build headers:
 #+BEGIN_SRC shell
@@ -422,11 +426,11 @@ Compile and test the test file:
   ${YLFS_TARGET}-readelf -l a.out | grep Requesting
 #+END_SRC
 ***** x86_64
-Output should be: =Requesting program interpreter: /tools/lib/ld-musl-x86_64.so.1=.
+Output should be: =[Requesting program interpreter: /tools/lib/ld-musl-x86_64.so.1]=.
 ***** i686
-Output should be: =Requesting program interpreter: /tools/lib/ld-musl-i386_64.so.1=.
+Output should be: =[Requesting program interpreter: /tools/lib/ld-musl-i386_64.so.1]=.
 ***** arm
-Output should be: =Requesting program interpreter: /tools/lib/ld-musl-arm.so.1=.
+Output should be: =[Requesting program interpreter: /tools/lib/ld-musl-arm.so.1]=.
 **** Clean
 Clean the outputed file:
 #+BEGIN_SRC shell
@@ -454,14 +458,15 @@ Create the build directory:
 #+END_SRC
 Configure sources:
 #+BEGIN_SRC shell
-  ../configure --prefix=/tools            \
-               --with-sysroot=${YLFS}     \
-               --with-lib-path=/tools/lib \
-               --build=${YLFS_HOST}       \
-               --host=${YLFS_TARGET}      \
-               --target=${YLFS_TARGET}    \
-               --disable-nls              \
-               --disable-werror
+  ../configure                   \
+      --prefix=/tools            \
+      --with-sysroot=${YLFS}     \
+      --with-lib-path=/tools/lib \
+      --build=${YLFS_HOST}       \
+      --host=${YLFS_TARGET}      \
+      --target=${YLFS_TARGET}    \
+      --disable-nls              \
+      --disable-werror
 #+END_SRC
 Build:
 #+BEGIN_SRC shell
@@ -557,7 +562,7 @@ Build and install:
 *** Kernel Headers
 Clean sources:
 #+BEGIN_SRC shell
-  make mrproper
+  ARCH=${YLFS_ARCH} make mrproper
 #+END_SRC
 Build headers:
 #+BEGIN_SRC shell
@@ -619,11 +624,11 @@ Compile and test the test file:
   ${YLFS_TARGET}-readelf -l a.out | grep Requesting
 #+END_SRC
 ***** x86_64
-Output should be: =Requesting program interpreter: /tools/lib/ld-musl-x86_64.so.1=.
+Output should be: =[Requesting program interpreter: /tools/lib/ld-musl-x86_64.so.1]=.
 ***** i686
-Output should be: =Requesting program interpreter: /tools/lib/ld-musl-i386_64.so.1=.
+Output should be: =[Requesting program interpreter: /tools/lib/ld-musl-i386_64.so.1]=.
 ***** arm
-Output should be: =Requesting program interpreter: /tools/lib/ld-musl-arm.so.1=.
+Output should be: =[Requesting program interpreter: /tools/lib/ld-musl-arm.so.1]=.
 **** Clean
 Clean the outputed file:
 #+BEGIN_SRC shell
@@ -642,15 +647,132 @@ Create the build directory:
 Configure sources:
 #+BEGIN_SRC shell
   ../libstdc++-v3/configure           \
-      --target=${MLFS_TARGET}         \
-      --build=${MLFS_HOST}            \
-      --host=${MLFS_TARGET}           \
+      --target=${YLFS_TARGET}         \
+      --build=${YLFS_HOST}            \
+      --host=${YLFS_TARGET}           \
       --prefix=/tools                 \
       --disable-multilib              \
       --disable-nls                   \
       --disable-libstdcxx-threads     \
       --disable-libstdcxx-pch         \
-      --with-gxx-include-dir=/tools/${MLFS_TARGET}/include/c++/9.1.0
+      --with-gxx-include-dir=/tools/${YLFS_TARGET}/include/c++/9.1.0
+#+END_SRC
+Build and install:
+#+BEGIN_SRC shell
+make && make install
+#+END_SRC
+*** Binutils 2/2
+Delete the old build directory:
+#+BEGIN_SRC shell
+  rm -rf build/
+#+END_SRC
+Create the build directory:
+#+BEGIN_SRC shell
+  mkdir -v build && cd build
+#+END_SRC
+Configure sources:
+#+BEGIN_SRC shell
+  ../configure                   \
+      --prefix=/tools            \
+      --with-sysroot=${YLFS}     \
+      --with-lib-path=/tools/lib \
+      --build=${YLFS_HOST}       \
+      --host=${YLFS_TARGET}      \
+      --target=${YLFS_TARGET}    \
+      --disable-nls              \
+      --disable-werror
+#+END_SRC
+Build and install:
+#+BEGIN_SRC shell
+  make && make install
+#+END_SRC
+Build and install the linker to the toolchain in order to adjust it later:
+#+BEGIN_SRC shell
+  make -C ld clean
+  make -C ld LIB_PATH=/usr/lib:/lib
+  cp -v ld/ld-new /tools/bin
+#+END_SRC
+*** GCC 2/2
+Delete the old build directory:
+#+BEGIN_SRC shell
+  rm -rf build/
+#+END_SRC
+Create a full version of the insternal header as what the normal gcc build
+system would do:
+#+BEGIN_SRC shell
+  cat gcc/limitx.h gcc/glimits.h gcc/limity.h > \
+    $(dirname $($YLFS_TARGET-gcc -print-libgcc-file-name))/include-fixed/limits.h
+#+END_SRC
+**** Fix GCC linker
+Fix GCC's default dynamic linker to use the one compiled in =/tools=.
+***** x86_64 / i686
+#+BEGIN_SRC shell
+  for file in gcc/config/{linux,i386/linux{,64}}.h; do
+    cp -uv $file{,.orig}
+    sed -e 's@/lib\(64\)\?\(32\)\?/ld@/tools&@g' \
+        -e 's@/usr@/tools@g' $file.orig > $file
+    echo '
+  #undef STANDARD_STARTFILE_PREFIX_1
+  #undef STANDARD_STARTFILE_PREFIX_2
+  #define STANDARD_STARTFILE_PREFIX_1 "/tools/lib/"
+  #define STANDARD_STARTFILE_PREFIX_2 ""' >> $file
+    :> $file.orig
+  done
+#+END_SRC
+Use =lib= instead of =lib64=, (for x86_64 only):
+#+BEGIN_SRC shell
+  sed -i '/m64=/s/lib64/lib/' gcc/config/i386/t-linux64
+  sed -i 's/lib64/lib/'       gcc/config/i386/linux64.h
+#+END_SRC
+***** arm
+#+BEGIN_SRC shell
+  for file in gcc/config/arm/linux-eabi.h; do
+    cp -uv $file{,.orig}
+    sed -e 's@/lib\(64\)\?\(32\)\?/ld@/tools&@g' \
+        -e 's@/usr@/tools@g' $file.orig > $file
+    echo '
+  #undef STANDARD_STARTFILE_PREFIX_1
+  #undef STANDARD_STARTFILE_PREFIX_2
+  #define STANDARD_STARTFILE_PREFIX_1 "/tools/lib/"
+  #define STANDARD_STARTFILE_PREFIX_2 ""' >> $file
+    :> $file.orig
+  done
+#+END_SRC
+**** Build
+Create the build directory:
+#+BEGIN_SRC shell
+  mkdir -v build && cd build
+#+END_SRC
+Configure:
+#+BEGIN_SRC shell
+  CFLAGS='-g0 -O0'   \
+  CXXFLAGS='-g0 -O0' \
+  ../configure                                       \
+      --target=${YLFS_TARGET}                        \
+      --build=${YLFS_HOST}                           \
+      --host=${YLFS_TARGET}                          \
+      --prefix=/tools                                \
+      --with-local-prefix=/tools                     \
+      --with-native-system-header-dir=/tools/include \
+      --disable-multilib                             \
+      --disable-libgomp                              \
+      --disable-libquadmath                          \
+      --disable-libssp                               \
+      --disable-libvtv                               \
+      --disable-libstdcxx                            \
+      --enable-languages=c,c++                       \
+      --disable-libstdcxx-pch                        \
+      --disable-symvers                              \
+      --disable-libitm                               \
+      --disable-libsanitizer 
+#+END_SRC
+Build and install:
+#+BEGIN_SRC shell
+PATH=/bin:/usr/bin:/cross-tools/bin:/tools/bin make && make install
+#+END_SRC
+Link =cc= to =gcc= for better compatibility:
+#+BEGIN_SRC shell
+  ln -sv gcc /tools/bin/cc
 #+END_SRC
 ** Final
 *** Toybox
