@@ -21,9 +21,10 @@
       - [[#i686-1][i686]]
       - [[#arm-1][arm]]
     - [[#adjust-cross-tool-chain][Adjust Cross Tool Chain]]
-      - [[#x86_64-2][x86_64]]
-      - [[#i686-2][i686]]
-      - [[#arm-2][arm]]
+      - [[#modify-compiler-specs][Modify compiler specs]]
+      - [[#install-specs][Install specs]]
+      - [[#check-tool-chain][Check tool chain]]
+      - [[#clean][Clean]]
   - [[#final][Final]]
     - [[#toybox][Toybox]]
 
@@ -359,26 +360,54 @@ Verify symlinks:
 #+END_SRC
 *** Adjust Cross Tool Chain
 Needed when host's libc isn't musl.\\
+**** Modify compiler specs
 Dump current cross-gcc specs:
 #+BEGIN_SRC shell
   export SPECFILE=`dirname $(${YLFS_TARGET}-gcc -print-libgcc-file-name)`/specs
   ${YLFS_TARGET}-gcc -dumpspecs > specs
 #+END_SRC
 Modify dumped specs file:
-**** x86_64
+***** x86_64
 #+BEGIN_SRC shell
   sed -i 's/\/lib\/ld-musl-x86_64.so.1/\/tools\/lib\/ld-musl-x86_64.so.1/g' specs
   grep "/tools/lib/ld-musl-x86_64.so.1" specs  --color=auto
 #+END_SRC
-**** i686
+***** i686
 #+BEGIN_SRC shell
   sed -i 's/\/lib\/ld-musl-i386.so.1/\/tools\/lib\/ld-musl-i386.so.1/g' specs
   grep "/tools/lib/ld-musl-i386.so.1" specs  --color=auto
 #+END_SRC
-**** arm
+***** arm
 #+BEGIN_SRC shell
   sed -i 's/\/lib\/ld-musl-arm/\/tools\/lib\/ld-musl-arm/g' specs
   grep "/tools/lib/ld-musl-arm" specs  --color=auto
+#+END_SRC
+**** Install specs
+Install the modified specs:
+#+BEGIN_SRC shell
+  mv -v specs $SPECFILE
+  unset SPECFILE
+#+END_SRC
+**** Check tool chain
+Create test file to test the compiler:
+#+BEGIN_SRC shell
+echo 'int main(){}' > test.c
+#+END_SRC
+Compile and test the test file:
+#+BEGIN_SRC shell
+${YLFS_TARGET}-gcc test.c
+${YLFS_TARGET}-readelf -l a.out | grep Requesting
+#+END_SRC
+***** x86_64
+Output should be: =Requesting program interpreter: /tools/lib/ld-musl-x86_64.so.1=.
+***** i686
+Output should be: =Requesting program interpreter: /tools/lib/ld-musl-i386_64.so.1=.
+***** arm
+Output should be: =Requesting program interpreter: /tools/lib/ld-musl-arm.so.1=.
+**** Clean
+Clean the outputed file:
+#+BEGIN_SRC shell
+rm -v a.out dummy.c 
 #+END_SRC
 ** Final
 *** Toybox
