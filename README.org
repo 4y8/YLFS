@@ -10,7 +10,7 @@
       - [[#arm][ARM]]
   - [[#cross-tools][Cross tools]]
     - [[#binutils][Binutils]]
-    - [[#linux][Linux]]
+    - [[#kernel-headers][Kernel Headers]]
     - [[#gcc-static][GCC Static]]
     - [[#musl][Musl]]
     - [[#gcc-final][GCC Final]]
@@ -27,6 +27,17 @@
       - [[#clean][Clean]]
     - [[#setup][Setup]]
     - [[#binutils-12][Binutils 1/2]]
+    - [[#gcc-12][GCC 1/2]]
+      - [[#fix-gcc-linker][Fix GCC linker]]
+      - [[#build][Build]]
+    - [[#kernel-headers-1][Kernel Headers]]
+    - [[#adjust-tool-chain][Adjust Tool Chain]]
+      - [[#modify-compiler-specs-1][Modify compiler specs]]
+      - [[#install-specs-1][Install specs]]
+      - [[#check-include][Check include]]
+      - [[#check-tool-chain-1][Check tool chain]]
+      - [[#clean-1][Clean]]
+    - [[#libstdcxx][Libstdcxx]]
   - [[#final][Final]]
     - [[#toybox][Toybox]]
 
@@ -146,14 +157,14 @@ Create the build directory:
 #+END_SRC
 Configure source:
 #+BEGIN_SRC shell
-  ../configure \
-     --prefix=/cross-tools \
-     --target=${YLFS_TARGET} \
+  ../configure                                  \
+     --prefix=/cross-tools                      \
+     --target=${YLFS_TARGET}                    \
      --with-sysroot=/cross-tools/${YLFS_TARGET} \
-     --disable-nls \
-     --disable-multilib \
-     --disable-werror \
-     --enable-deterministic-archives \
+     --disable-nls                              \
+     --disable-multilib                         \
+     --disable-werror                           \
+     --enable-deterministic-archives            \
      --disable-compressed-debug-sections
 #+END_SRC
 Build:
@@ -168,7 +179,7 @@ Install:
 #+BEGIN_SRC shell
   make install
 #+END_SRC
-*** Linux
+*** Kernel Headers
 Source: https://cdn.kernel.org/pub/linux/kernel/v5.x/linux-5.8.1.tar.xz \\
 Download and extract the sources:
 #+BEGIN_SRC shell
@@ -224,21 +235,32 @@ Create the build directory:
 #+END_SRC
 Configure sources:
 #+BEGIN_SRC shell
-  CFLAGS='-g0 -O0' \
+  CFLAGS='-g0 -O0'   \
   CXXFLAGS='-g0 -O0' \
-  ../configure \
-            --prefix=${YLFS}/cross-tools --build=${MACHTYPE} \
-            --host=${MACHTYPE}   --target=${YLFS_TARGET} \
-            --with-sysroot=${YLFS}/cross-tools/${YLFS_TARGET} \
-            --disable-nls         --with-newlib  \
-            --disable-libitm     --disable-libvtv \
-            --disable-libssp     --disable-shared \
-            --disable-libgomp    --without-headers \
-            --disable-threads    --disable-multilib \
-            --disable-libatomic  --disable-libstdcxx \
-            --enable-languages=c --disable-libquadmath \
-            --disable-libsanitizer --with-arch=${YLFS_CPU} \
-            --disable-decimal-float --enable-clocale=generic
+  ../configure                                            \
+        --prefix=${YLFS}/cross-tools                      \
+        --build=${MACHTYPE}                               \
+        --host=${MACHTYPE}                                \
+        --target=${YLFS_TARGET}                           \
+        --with-sysroot=${YLFS}/cross-tools/${YLFS_TARGET} \
+        --disable-nls                                     \
+        --with-newlib                                     \
+        --disable-libitm                                  \
+        --disable-libvtv                                  \
+        --disable-libssp                                  \
+        --disable-shared                                  \
+        --disable-libgomp                                 \
+        --without-headers                                 \
+        --disable-threads                                 \
+        --disable-multilib                                \
+        --disable-libatomic                               \
+        --disable-libstdcxx                               \
+        --enable-languages=c                              \
+        --disable-libquadmath                             \
+        --disable-libsanitizer                            \
+        --with-arch=${YLFS_CPU}                           \
+        --disable-decimal-float                           \
+        --enable-clocale=generic
 #+END_SRC
 Build and install the only the minimum needed:
 #+BEGIN_SRC shell
@@ -274,7 +296,7 @@ Delete the old build directory:
 #+BEGIN_SRC shell
   rm -rf build/
 #+END_SRC
-Use =lib= instead of =lib64=:
+Use =lib= instead of =lib64=, (for x86_64 only):
 #+BEGIN_SRC shell
   sed -i '/m64=/s/lib64/lib/' gcc/config/i386/t-linux64
   sed -i 's/lib64/lib/'       gcc/config/i386/linux64.h
@@ -392,12 +414,12 @@ Install the modified specs:
 **** Check tool chain
 Create test file to test the compiler:
 #+BEGIN_SRC shell
-echo 'int main(){}' > test.c
+  echo 'int main(){}' > test.c
 #+END_SRC
 Compile and test the test file:
 #+BEGIN_SRC shell
-${YLFS_TARGET}-gcc test.c
-${YLFS_TARGET}-readelf -l a.out | grep Requesting
+  ${YLFS_TARGET}-gcc test.c
+  ${YLFS_TARGET}-readelf -l a.out | grep Requesting
 #+END_SRC
 ***** x86_64
 Output should be: =Requesting program interpreter: /tools/lib/ld-musl-x86_64.so.1=.
@@ -408,7 +430,7 @@ Output should be: =Requesting program interpreter: /tools/lib/ld-musl-arm.so.1=.
 **** Clean
 Clean the outputed file:
 #+BEGIN_SRC shell
-rm -v a.out test.c 
+  rm -v a.out test.c 
 #+END_SRC
 *** Setup
 Export variables to use cross-tools:
@@ -433,11 +455,11 @@ Create the build directory:
 Configure sources:
 #+BEGIN_SRC shell
   ../configure --prefix=/tools            \
-               --with-sysroot=$MLFS        \
+               --with-sysroot=${YLFS}     \
                --with-lib-path=/tools/lib \
-               --build=${MLFS_HOST} \
-               --host=${MLFS_TARGET} \
-               --target=${MLFS_TARGET}          \
+               --build=${YLFS_HOST}       \
+               --host=${YLFS_TARGET}      \
+               --target=${YLFS_TARGET}    \
                --disable-nls              \
                --disable-werror
 #+END_SRC
@@ -452,6 +474,183 @@ Create a symlink for =lib64= (only on x86_64):
 Install:
 #+BEGIN_SRC shell
   make install
+#+END_SRC
+*** GCC 1/2
+Delete the old build directory:
+#+BEGIN_SRC shell
+  rm -rf build/
+#+END_SRC
+**** Fix GCC linker
+Fix GCC's default dynamic linker to use the one compiled in =/tools=.
+***** x86_64 / i686
+#+BEGIN_SRC shell
+  for file in gcc/config/{linux,i386/linux{,64}}.h; do
+    cp -uv $file{,.orig}
+    sed -e 's@/lib\(64\)\?\(32\)\?/ld@/tools&@g' \
+        -e 's@/usr@/tools@g' $file.orig > $file
+    echo '
+  #undef STANDARD_STARTFILE_PREFIX_1
+  #undef STANDARD_STARTFILE_PREFIX_2
+  #define STANDARD_STARTFILE_PREFIX_1 "/tools/lib/"
+  #define STANDARD_STARTFILE_PREFIX_2 ""' >> $file
+    :> $file.orig
+  done
+#+END_SRC
+Use =lib= instead of =lib64=, (for x86_64 only):
+#+BEGIN_SRC shell
+  sed -i '/m64=/s/lib64/lib/' gcc/config/i386/t-linux64
+  sed -i 's/lib64/lib/'       gcc/config/i386/linux64.h
+#+END_SRC
+***** arm
+#+BEGIN_SRC shell
+  for file in gcc/config/arm/linux-eabi.h; do
+    cp -uv $file{,.orig}
+    sed -e 's@/lib\(64\)\?\(32\)\?/ld@/tools&@g' \
+        -e 's@/usr@/tools@g' $file.orig > $file
+    echo '
+  #undef STANDARD_STARTFILE_PREFIX_1
+  #undef STANDARD_STARTFILE_PREFIX_2
+  #define STANDARD_STARTFILE_PREFIX_1 "/tools/lib/"
+  #define STANDARD_STARTFILE_PREFIX_2 ""' >> $file
+    :> $file.orig
+  done
+#+END_SRC
+**** Build
+Create the build directory:
+#+BEGIN_SRC shell
+  mkdir -v build && cd build
+#+END_SRC
+Configure:
+#+BEGIN_SRC shell
+  CFLAGS='-g0 -O0'   \
+  CXXFLAGS='-g0 -O0' \
+  ../configure                                       \
+      --target=${YLFS_TARGET}                        \
+      --build=${YLFS_HOST}                           \
+      --host=${YLFS_TARGET}                          \
+      --prefix=/tools                                \
+      --with-sysroot=$YLFS                           \
+      --with-newlib                                  \
+      --without-headers                              \
+      --with-local-prefix=/tools                     \
+      --with-native-system-header-dir=/tools/include \
+      --disable-nls                                  \
+      --disable-shared                               \
+      --disable-multilib                             \
+      --disable-threads                              \
+      --disable-libatomic                            \
+      --disable-libgomp                              \
+      --disable-libquadmath                          \
+      --disable-libssp                               \
+      --disable-libvtv                               \
+      --disable-libstdcxx                            \
+      --enable-languages=c,c++                       \
+      --disable-libstdcxx-pch                        \
+      --disable-symvers                              \
+      --disable-libitm                               \
+      --disable-libsanitizer 
+#+END_SRC
+Build and install:
+#+BEGIN_SRC shell
+  make && make install
+#+END_SRC
+*** Kernel Headers
+Clean sources:
+#+BEGIN_SRC shell
+  make mrproper
+#+END_SRC
+Build headers:
+#+BEGIN_SRC shell
+  ARCH=${YLFS_ARCH} make headers
+#+END_SRC
+Clean:
+#+BEGIN_SRC shell
+  find usr/include \( -name .install -o -name ..install.cmd \) -delete
+  rm usr/include/Makefile
+#+END_SRC
+Install headers
+#+BEGIN_SRC shell
+  cp -rv usr/include/* /tools/include
+#+END_SRC
+*** Adjust Tool Chain
+**** Modify compiler specs
+Dump current cross-gcc specs:
+#+BEGIN_SRC shell
+  export SPECFILE=`dirname $(${YLFS_TARGET}-gcc -print-libgcc-file-name)`/specs
+  ${YLFS_TARGET}-gcc -dumpspecs > specs
+#+END_SRC
+Modify dumped specs file:
+***** x86_64
+#+BEGIN_SRC shell
+  sed -i 's/\/lib\/ld-musl-x86_64.so.1/\/tools\/lib\/ld-musl-x86_64.so.1/g' specs
+  grep "/tools/lib/ld-musl-x86_64.so.1" specs  --color=auto
+#+END_SRC
+***** i686
+#+BEGIN_SRC shell
+  sed -i 's/\/lib\/ld-musl-i386.so.1/\/tools\/lib\/ld-musl-i386.so.1/g' specs
+  grep "/tools/lib/ld-musl-i386.so.1" specs  --color=auto
+#+END_SRC
+***** arm
+#+BEGIN_SRC shell
+  sed -i 's/\/lib\/ld-musl-arm/\/tools\/lib\/ld-musl-arm/g' specs
+  grep "/tools/lib/ld-musl-arm" specs  --color=auto
+#+END_SRC
+**** Install specs
+Install the modified specs:
+#+BEGIN_SRC shell
+  mv -vf specs $SPECFILE
+  unset SPECFILE
+#+END_SRC
+**** Check include
+#+BEGIN_SRC shell
+  GCC_INCLUDEDIR=`dirname $(${YLFS_TARGET}-gcc -print-libgcc-file-name)`/include &&
+  find ${GCC_INCLUDEDIR}/* -maxdepth 0 -xtype d -exec rm -rvf '{}' \; &&
+  rm -vf `grep -l "DO NOT EDIT THIS FILE" ${GCC_INCLUDEDIR}/*` &&
+  unset GCC_INCLUDEDIR
+#+END_SRC
+**** Check tool chain
+Create test file to test the compiler:
+#+BEGIN_SRC shell
+  echo 'int main(){}' > test.c
+#+END_SRC
+Compile and test the test file:
+#+BEGIN_SRC shell
+  ${YLFS_TARGET}-gcc test.c
+  ${YLFS_TARGET}-readelf -l a.out | grep Requesting
+#+END_SRC
+***** x86_64
+Output should be: =Requesting program interpreter: /tools/lib/ld-musl-x86_64.so.1=.
+***** i686
+Output should be: =Requesting program interpreter: /tools/lib/ld-musl-i386_64.so.1=.
+***** arm
+Output should be: =Requesting program interpreter: /tools/lib/ld-musl-arm.so.1=.
+**** Clean
+Clean the outputed file:
+#+BEGIN_SRC shell
+  rm -v a.out test.c 
+#+END_SRC
+*** Libstdcxx
+Has to be done in the =gcc= source directory.\\
+Delete the old build directory:
+#+BEGIN_SRC shell
+  rm -rf build/
+#+END_SRC
+Create the build directory:
+#+BEGIN_SRC shell
+  mkdir -v build && cd build
+#+END_SRC
+Configure sources:
+#+BEGIN_SRC shell
+  ../libstdc++-v3/configure           \
+      --target=${MLFS_TARGET}         \
+      --build=${MLFS_HOST}            \
+      --host=${MLFS_TARGET}           \
+      --prefix=/tools                 \
+      --disable-multilib              \
+      --disable-nls                   \
+      --disable-libstdcxx-threads     \
+      --disable-libstdcxx-pch         \
+      --with-gxx-include-dir=/tools/${MLFS_TARGET}/include/c++/9.1.0
 #+END_SRC
 ** Final
 *** Toybox
