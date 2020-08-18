@@ -54,7 +54,8 @@ Prepare the directories for the sources and patches:
 #+END_SRC
 Link directories:
 #+BEGIN_SRC shell
-#  ln -sv ${YLFS}/tools /
+  ln -sv $YLFS/cross-tools /
+  ln -sv $YLFS/tools /
 #+END_SRC
 Create a new user for the installation of tools:
 #+BEGIN_SRC shell
@@ -86,31 +87,31 @@ Add multicore compilation:
 **** x86_64
 Set build options for 64 bit CPUs:
 #+BEGIN_SRC shell
-  export TARGET="x86_64-linux-musl"
-  export ARCH="x86"
-  export CPU="x86-64"
+  export YLFS_TARGET="x86_64-linux-musl"
+  export YLFS_ARCH="x86"
+  export YLFS_CPU="x86-64"
 #+END_SRC
-**** i686 
+**** i686
 Set build options for 32 bit CPUs:
 #+BEGIN_SRC shell
-  export TARGET="i686-linux-musl"
-  export ARCH="x86"
-  export CPU="i686"
+  export YLFS_TARGET="i686-linux-musl"
+  export YLFS_ARCH="x86"
+  export YLFS_CPU="i686"
 #+END_SRC
 **** ARM
 ***** armv7
 Set build options for armv7 CPUs:
 #+BEGIN_SRC shell
-  export TARGET="armv7l-linux-musl"
-  export ARCH="arm"
-  export CPU="armv7-a"
+  export YLFS_TARGET="armv7l-linux-musl"
+  export YLFS_ARCH="arm"
+  export YLFS_CPU="armv7-a"
 #+END_SRC
 ***** armv6
 Set build options for armv6 CPUs:
 #+BEGIN_SRC shell
-  export TARGET="armv6l-linux-musl"
-  export ARCH="arm"
-  export CPU="armv6"
+  export YLFS_TARGET="armv6l-linux-musl"
+  export YLFS_ARCH="arm"
+  export YLFS_CPU="armv6"
 #+END_SRC
 ** Cross tools
 *** Binutils
@@ -129,13 +130,13 @@ Configure source:
 #+BEGIN_SRC shell
   ../configure \
      --prefix=/cross-tools \
-     --target=${TARGET} \
-     --with-sysroot=/cross-tools/${TARGET} \
+     --target=${YLFS_TARGET} \
+     --with-sysroot=/cross-tools/${YLFS_TARGET} \
      --disable-nls \
      --disable-multilib \
      --disable-werror \
      --enable-deterministic-archives \
-     --disable-compressed-debug-sections 
+     --disable-compressed-debug-sections
 #+END_SRC
 Build:
 #+BEGIN_SRC shell
@@ -171,11 +172,11 @@ Clean:
 #+END_SRC
 Install headers:
 #+BEGIN_SRC shell
-  cp -rv usr/include/* /cross-tools/${TARGET}/include
+  cp -rv usr/include/* /cross-tools/${YLFS_TARGET}/include
 #+END_SRC
 *** GCC
 Source: https://ftp.gnu.org/gnu/gcc/gcc-10.2.0/gcc-10.2.0.tar.xz
-Dependencies: 
+Dependencies:
 - https://www.mpfr.org/mpfr-current/mpfr-4.1.0.tar.xz
 - https://ftp.gnu.org/gnu/mpc/mpc-1.1.0.tar.gz
 - https://ftp.gnu.org/gnu/gmp/gmp-6.2.0.tar.xz
@@ -210,8 +211,8 @@ Configure the compiler:
   CXXFLAGS='-g0 -O0' \
   ../configure \
             --prefix=${YLFS}/cross-tools --build=${MACHTYPE} \
-            --host=${MACHTYPE}   --target=${TARGET} \
-            --with-sysroot=${YLFS}/cross-tools/${TARGET} \
+            --host=${MACHTYPE}   --target=${YLFS_TARGET} \
+            --with-sysroot=${YLFS}/cross-tools/${YLFS_TARGET} \
             --disable-nls         --with-newlib  \
             --disable-libitm     --disable-libvtv \
             --disable-libssp     --disable-shared \
@@ -219,7 +220,7 @@ Configure the compiler:
             --disable-threads    --disable-multilib \
             --disable-libatomic  --disable-libstdcxx \
             --enable-languages=c --disable-libquadmath \
-            --disable-libsanitizer --with-arch=${CPU} \
+            --disable-libsanitizer --with-arch=${YLFS_CPU} \
 #+END_SRC
 Build and install the only the minimum needed:
 #+BEGIN_SRC shell
@@ -237,9 +238,9 @@ Download and extract the sources:
 Configure cross build:
 #+BEGIN_SRC shell
   ./configure \
-    CROSS_COMPILE=${TARGET}- \
+    CROSS_COMPILE=${YLFS_TARGET}- \
     --prefix=/ \
-    --target=${TARGET} 
+    --target=${YLFS_TARGET}
 #+END_SRC
 Build and install:
 #+BEGIN_SRC shell
@@ -259,11 +260,9 @@ Download and extract the sources:
   tar -xf toybox-0.8.3.tar.gz
   cd toybox-0.8.3
 #+END_SRC
-Build, before installation we need to create an executable named =toybox= since
-=make= doesn't generate it and instead generate =toybox-$TARGET=:
+Configure, build and install.
 #+BEGIN_SRC shell
-  CROSS_COMPILE=$CPU make defconfig
+  CROSS_COMPILE=$YLFS_CPU make defconfig
   make
-  mv "toybox-$TARGET" toybox
   PREFIX=${YLFS}/cross-tools make install
 #+END_SRC
