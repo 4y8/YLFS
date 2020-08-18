@@ -15,6 +15,15 @@
     - [[#musl][Musl]]
     - [[#gcc-final][GCC Final]]
     - [[#file][File]]
+  - [[#tool-chain][Tool Chain]]
+    - [[#musl-1][Musl]]
+      - [[#x86_64-1][x86_64]]
+      - [[#i686-1][i686]]
+      - [[#arm-1][arm]]
+    - [[#adjust-cross-tool-chain][Adjust Cross Tool Chain]]
+      - [[#x86_64-2][x86_64]]
+      - [[#i686-2][i686]]
+      - [[#arm-2][arm]]
   - [[#final][Final]]
     - [[#toybox][Toybox]]
 
@@ -83,7 +92,7 @@ Clear compilation C flags:
 #+END_SRC
 Add multicore compilation:
 #+BEGIN_SRC shell
-  export MAKEFLAGS="-j 4"
+  export MAKEFLAGS="-j $(nproc)"
 #+END_SRC
 Add future tools to the path:
 #+BEGIN_SRC shell
@@ -265,8 +274,8 @@ Delete the old build directory:
 #+END_SRC
 Use =lib= instead of =lib64=:
 #+BEGIN_SRC shell
-  sed -i '/m64=/s/lib64/lib/' gcc/gcc/config/i386/t-linux64
-  sed -i 's/lib64/lib/'       gcc/gcc/config/i386/linux64.h
+  sed -i '/m64=/s/lib64/lib/' gcc/config/i386/t-linux64
+  sed -i 's/lib64/lib/'       gcc/config/i386/linux64.h
 #+END_SRC
 Create the build directory:
 #+BEGIN_SRC shell
@@ -296,15 +305,15 @@ Configure sources:
 #+END_SRC
 Build:
 #+BEGIN_SRC shell
-  make AS_FOR_TARGET="${MLFS_TARGET}-as" \
-       LD_FOR_TARGET="${MLFS_TARGET}-ld"
+  make AS_FOR_TARGET="${YLFS_TARGET}-as" \
+  LD_FOR_TARGET="${YLFS_TARGET}-ld"
 #+END_SRC
 Install
 #+BEGIN_SRC shell
   make install
 #+END_SRC
 *** File
-Source ftp://ftp.astron.com/pub/file/file-5.39.tar.gz \\
+Source: ftp://ftp.astron.com/pub/file/file-5.39.tar.gz \\
 Download and extract the sources:
 #+BEGIN_SRC shell
   wget ftp://ftp.astron.com/pub/file/file-5.39.tar.gz
@@ -318,6 +327,58 @@ Configure sources:
 Build and install:
 #+BEGIN_SRC shell
   make && make install
+#+END_SRC
+** Tool Chain
+*** Musl
+Configure sources:
+#+BEGIN_SRC shell
+  ./configure \
+    CROSS_COMPILE=${YLFS_TARGET}- \
+    --prefix=/ \
+    --target=${YLFS_TARGET}
+#+END_SRC
+Build and install: 
+#+BEGIN_SRC shell
+  make && make DESTDIR=/tools install
+#+END_SRC
+Verify symlinks:
+**** x86_64
+#+BEGIN_SRC shell
+  rm -v  /tools/lib/ld-musl-x86_64.so.1
+  ln -sv libc.so /tools/lib/ld-musl-x86_64.so.1
+#+END_SRC
+**** i686
+#+BEGIN_SRC shell
+  rm -v  /tools/lib/ld-musl-i686.so.1
+  ln -sv libc.so /tools/lib/ld-musl-i686.so.1
+#+END_SRC
+**** arm
+#+BEGIN_SRC shell
+  rm -v  /tools/lib/ld-musl-arm.so.1
+  ln -sv libc.so /tools/lib/ld-musl-arm.so.1
+#+END_SRC
+*** Adjust Cross Tool Chain
+Needed when host's libc isn't musl.\\
+Dump current cross-gcc specs:
+#+BEGIN_SRC shell
+  export SPECFILE=`dirname $(${YLFS_TARGET}-gcc -print-libgcc-file-name)`/specs
+  ${YLFS_TARGET}-gcc -dumpspecs > specs
+#+END_SRC
+Modify dumped specs file:
+**** x86_64
+#+BEGIN_SRC shell
+  sed -i 's/\/lib\/ld-musl-x86_64.so.1/\/tools\/lib\/ld-musl-x86_64.so.1/g' specs
+  grep "/tools/lib/ld-musl-x86_64.so.1" specs  --color=auto
+#+END_SRC
+**** i686
+#+BEGIN_SRC shell
+  sed -i 's/\/lib\/ld-musl-i386.so.1/\/tools\/lib\/ld-musl-i386.so.1/g' specs
+  grep "/tools/lib/ld-musl-i386.so.1" specs  --color=auto
+#+END_SRC
+**** arm
+#+BEGIN_SRC shell
+  sed -i 's/\/lib\/ld-musl-arm/\/tools\/lib\/ld-musl-arm/g' specs
+  grep "/tools/lib/ld-musl-arm" specs  --color=auto
 #+END_SRC
 ** Final
 *** Toybox
