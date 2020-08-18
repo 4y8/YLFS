@@ -42,6 +42,11 @@
     - [[#gcc-22][GCC 2/2]]
       - [[#fix-gcc-linker-1][Fix GCC linker]]
       - [[#build-1][Build]]
+      - [[#test-compiler][Test compiler]]
+      - [[#clean-2][Clean]]
+    - [[#tcl][TCL]]
+    - [[#dejagnu][DejaGNU]]
+    - [[#m4][M4]]
   - [[#final][Final]]
     - [[#toybox][Toybox]]
 
@@ -428,7 +433,7 @@ Compile and test the test file:
 ***** x86_64
 Output should be: =[Requesting program interpreter: /tools/lib/ld-musl-x86_64.so.1]=.
 ***** i686
-Output should be: =[Requesting program interpreter: /tools/lib/ld-musl-i386_64.so.1]=.
+Output should be: =[Requesting program interpreter: /tools/lib/ld-musl-i386.so.1]=.
 ***** arm
 Output should be: =[Requesting program interpreter: /tools/lib/ld-musl-arm.so.1]=.
 **** Clean
@@ -626,7 +631,7 @@ Compile and test the test file:
 ***** x86_64
 Output should be: =[Requesting program interpreter: /tools/lib/ld-musl-x86_64.so.1]=.
 ***** i686
-Output should be: =[Requesting program interpreter: /tools/lib/ld-musl-i386_64.so.1]=.
+Output should be: =[Requesting program interpreter: /tools/lib/ld-musl-i386.so.1]=.
 ***** arm
 Output should be: =[Requesting program interpreter: /tools/lib/ld-musl-arm.so.1]=.
 **** Clean
@@ -768,15 +773,96 @@ Configure:
 #+END_SRC
 Build and install:
 #+BEGIN_SRC shell
-PATH=/bin:/usr/bin:/cross-tools/bin:/tools/bin make && make install
+  PATH=/bin:/usr/bin:/cross-tools/bin:/tools/bin make && make install
 #+END_SRC
 Link =cc= to =gcc= for better compatibility:
 #+BEGIN_SRC shell
   ln -sv gcc /tools/bin/cc
 #+END_SRC
+**** Test compiler
+Create test file to test the compiler:
+#+BEGIN_SRC shell
+  echo 'int main(){}' > test.c
+#+END_SRC
+Compile and test the test file:
+#+BEGIN_SRC shell
+  cc test.c
+  readelf -l a.out | grep Requesting
+#+END_SRC
+***** x86_64
+Output should be: =[Requesting program interpreter: /tools/lib/ld-musl-x86_64.so.1]=.
+***** i686
+Output should be: =[Requesting program interpreter: /tools/lib/ld-musl-i386.so.1]=.
+***** arm
+Output should be: =[Requesting program interpreter: /tools/lib/ld-musl-arm.so.1]=.
+**** Clean
+Clean the outputed file:
+#+BEGIN_SRC shell
+  rm -v a.out test.c 
+#+END_SRC
+*** TCL
+Source: https://downloads.sourceforge.net/tcl/tcl8.6.10-src.tar.gz \\
+Download and extract the sources:
+#+BEGIN_SRC shell
+  wget https://downloads.sourceforge.net/tcl/tcl8.6.10-src.tar.gz
+  tar -xf tcl8.6.10-src.tar.gz
+  cd tcl8.6.10-src/unix
+#+END_SRC
+Configure sources:
+#+BEGIN_SRC shell
+  ac_cv_func_strtod=yes \
+  tcl_cv_strtod_buggy=1 \
+  ./configure --build=${YLFS_HOST}  \
+              --host=${YLFS_TARGET} \
+              --prefix=/tools
+#+END_SRC
+Build and install:
+#+BEGIN_SRC shell
+  make && make install
+#+END_SRC
+Install headers:
+#+BEGIN_SRC shell
+  chmod -v u+w /tools/lib/libtcl8.6.so
+  make install-private-headers
+  ln -sv tclsh8.6 /tools/bin/tcls
+#+END_SRC
+*** DejaGNU
+Source: http://ftp.gnu.org/gnu/dejagnu/dejagnu-1.6.2.tar.gz \\
+#+BEGIN_SRC shell
+  wget http://ftp.gnu.org/gnu/dejagnu/dejagnu-1.6.2.tar.gz
+  tar -xf dejagnu-1.6.2.tar.gz
+  cd dejagnu-1.6.2
+#+END_SRC
+Configure sources:
+#+BEGIN_SRC shell
+  ./configure --build=${YLFS_HOST}  \
+              --host=${YLFS_TARGET} \
+              --prefix=/tools
+#+END_SRC
+Build and install:
+#+BEGIN_SRC shell
+  make && make install
+#+END_SRC
+*** M4
+Source: http://ftp.gnu.org/gnu/m4/m4-1.4.18.tar.xz \\
+#+BEGIN_SRC shell
+  wget http://ftp.gnu.org/gnu/m4/m4-1.4.18.tar.xz
+  tar -xf m4-1.4.18.tar.xz
+  cd m4-1.4.18
+#+END_SRC
+Configure sources:
+#+BEGIN_SRC shell
+  ./configure --build=${YLFS_HOST}  \
+              --host=${YLFS_TARGET} \
+              --prefix=/tools
+#+END_SRC
+Build and install:
+#+BEGIN_SRC shell
+  make && make install
+#+END_SRC
 ** Final
 *** Toybox
-Source: https://landley.net/toybox/downloads/toybox-0.8.3.tar.gz
+Source: https://landley.net/toybox/downloads/toybox-0.8.3.tar.gz \\
 Download and extract the sources:
 #+BEGIN_SRC shell
   wget https://landley.net/toybox/downloads/toybox-0.8.3.tar.gz
