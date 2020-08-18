@@ -25,6 +25,8 @@
       - [[#install-specs][Install specs]]
       - [[#check-tool-chain][Check tool chain]]
       - [[#clean][Clean]]
+    - [[#setup][Setup]]
+    - [[#binutils-12][Binutils 1/2]]
   - [[#final][Final]]
     - [[#toybox][Toybox]]
 
@@ -158,9 +160,9 @@ Build:
 #+BEGIN_SRC shell
   make
 #+END_SRC
-Create a symlink (only on x86_64):
+Create a symlink for =lib64= (only on x86_64):
 #+BEGIN_SRC shell
-  mkdir -v ${YLFS}/tools/lib && ln -sv lib ${YLFS}/tools/lib64
+  mkdir -v /tools/lib && ln -sv lib /tools/lib64
 #+END_SRC
 Install:
 #+BEGIN_SRC shell
@@ -268,7 +270,6 @@ Create the missing directory and link the library:
   ln -sv ../include /cross-tools/usr/include
 #+END_SRC
 *** GCC Final
-Sources: see GCC Static\\
 Delete the old build directory:
 #+BEGIN_SRC shell
   rm -rf build/
@@ -407,7 +408,50 @@ Output should be: =Requesting program interpreter: /tools/lib/ld-musl-arm.so.1=.
 **** Clean
 Clean the outputed file:
 #+BEGIN_SRC shell
-rm -v a.out dummy.c 
+rm -v a.out test.c 
+#+END_SRC
+*** Setup
+Export variables to use cross-tools:
+#+BEGIN_SRC shell
+  export CC="${YLFS_TARGET}-gcc"
+  export CXX="${YLFS_TARGET}-g++"
+  export AR="${YLFS_TARGET}-ar"
+  export AS="${YLFS_TARGET}-as"
+  export RANLIB="${YLFS_TARGET}-ranlib"
+  export LD="${YLFS_TARGET}-ld"
+  export STRIP="${YLFS_TARGET}-strip"
+#+END_SRC
+*** Binutils 1/2
+Delete the old build directory:
+#+BEGIN_SRC shell
+  rm -rf build/
+#+END_SRC
+Create the build directory:
+#+BEGIN_SRC shell
+  mkdir -v build && cd build
+#+END_SRC
+Configure sources:
+#+BEGIN_SRC shell
+  ../configure --prefix=/tools            \
+               --with-sysroot=$MLFS        \
+               --with-lib-path=/tools/lib \
+               --build=${MLFS_HOST} \
+               --host=${MLFS_TARGET} \
+               --target=${MLFS_TARGET}          \
+               --disable-nls              \
+               --disable-werror
+#+END_SRC
+Build:
+#+BEGIN_SRC shell
+  make
+#+END_SRC
+Create a symlink for =lib64= (only on x86_64):
+#+BEGIN_SRC shell
+  ln -sv lib /tools/lib64
+#+END_SRC
+Install:
+#+BEGIN_SRC shell
+  make install
 #+END_SRC
 ** Final
 *** Toybox
