@@ -9,10 +9,12 @@
       - [[#i686][i686]]
       - [[#arm][ARM]]
   - [[#cross-tools][Cross tools]]
-    - [[#toybox][Toybox]]
+    - [[#binutils][Binutils]]
     - [[#linux][Linux]]
     - [[#gcc][GCC]]
     - [[#musl][Musl]]
+  - [[#final][Final]]
+    - [[#toybox][Toybox]]
 
 * Partitions
 ** BIOS
@@ -84,14 +86,14 @@ Add multicore compilation:
 **** x86_64
 Set build options for 64 bit CPUs:
 #+BEGIN_SRC shell
-  export TARGET="x86_64-ylfs-linux-musl"
+  export TARGET="x86_64-linux-musl"
   export ARCH="x86"
   export CPU="x86-64"
 #+END_SRC
 **** i686 
 Set build options for 32 bit CPUs:
 #+BEGIN_SRC shell
-  export TARGET="i686-ylfs-linux-musl"
+  export TARGET="i686-linux-musl"
   export ARCH="x86"
   export CPU="i686"
 #+END_SRC
@@ -99,33 +101,53 @@ Set build options for 32 bit CPUs:
 ***** armv7
 Set build options for armv7 CPUs:
 #+BEGIN_SRC shell
-  export TARGET="armv7l-ylfs-linux-musl"
+  export TARGET="armv7l-linux-musl"
   export ARCH="arm"
   export CPU="armv7-a"
 #+END_SRC
 ***** armv6
 Set build options for armv6 CPUs:
 #+BEGIN_SRC shell
-  export TARGET="armv6l-ylfs-linux-musl"
+  export TARGET="armv6l-linux-musl"
   export ARCH="arm"
   export CPU="armv6"
 #+END_SRC
 ** Cross tools
-*** Toybox
-Source: https://landley.net/toybox/downloads/toybox-0.8.3.tar.gz
+*** Binutils
+Source: https://ftp.gnu.org/gnu/binutils/binutils-2.35.tar.xz
 Download and extract the sources:
 #+BEGIN_SRC shell
-  wget https://landley.net/toybox/downloads/toybox-0.8.3.tar.gz
-  tar -xf toybox-0.8.3.tar.gz
-  cd toybox-0.8.3
+  wget https://ftp.gnu.org/gnu/binutils/binutils-2.35.tar.xz
+  tar -xf binutils-2.35.tar.xz
+  cd binutils-2.35
 #+END_SRC
-Build, before installation we need to create an executable named =toybox= since
-=make= doesn't generate it and instead generate =toybox-$TARGET=:
+Create the build directory:
 #+BEGIN_SRC shell
-  CROSS_COMPILE=$CPU make defconfig
+  mkdir -v build && cd build
+#+END_SRC
+Configure source:
+#+BEGIN_SRC shell
+  ../configure \
+     --prefix=/cross-tools \
+     --target=${TARGET} \
+     --with-sysroot=/cross-tools/${TARGET} \
+     --disable-nls \
+     --disable-multilib \
+     --disable-werror \
+     --enable-deterministic-archives \
+     --disable-compressed-debug-sections 
+#+END_SRC
+Build:
+#+BEGIN_SRC shell
   make
-  mv "toybox-$TARGET" toybox
-  PREFIX=${YLFS}/cross-tools make install
+#+END_SRC
+Create a symlink (only on x86_64):
+#+BEGIN_SRC shell
+  mkdir -v ${YLFS}/tools/lib && ln -sv lib ${YLFS}/tools/lib64
+#+END_SRC
+Install:
+#+BEGIN_SRC shell
+  make install
 #+END_SRC
 *** Linux
 Source: https://cdn.kernel.org/pub/linux/kernel/v5.x/linux-5.8.1.tar.xz
@@ -180,7 +202,7 @@ Extract dependencies:
 #+END_SRC
 Create the build directory:
 #+BEGIN_SRC shell
-  mkdir -v build && cd  build
+  mkdir -v build && cd build
 #+END_SRC
 Configure the compiler:
 #+BEGIN_SRC shell
@@ -227,4 +249,21 @@ Create the missing directory and link the library:
 #+BEGIN_SRC shell
   mkdir -v /cross-tools/usr
   ln -sv ../include  /cross-tools/usr/include
+#+END_SRC
+** Final
+*** Toybox
+Source: https://landley.net/toybox/downloads/toybox-0.8.3.tar.gz
+Download and extract the sources:
+#+BEGIN_SRC shell
+  wget https://landley.net/toybox/downloads/toybox-0.8.3.tar.gz
+  tar -xf toybox-0.8.3.tar.gz
+  cd toybox-0.8.3
+#+END_SRC
+Build, before installation we need to create an executable named =toybox= since
+=make= doesn't generate it and instead generate =toybox-$TARGET=:
+#+BEGIN_SRC shell
+  CROSS_COMPILE=$CPU make defconfig
+  make
+  mv "toybox-$TARGET" toybox
+  PREFIX=${YLFS}/cross-tools make install
 #+END_SRC
