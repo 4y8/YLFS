@@ -53,12 +53,13 @@
     - [[#bison][Bison]]
     - [[#bzip2][Bzip2]]
     - [[#toybox][Toybox]]
+    - [[#coreutils][Coreutils]]
     - [[#diffutils][Diffutils]]
     - [[#file-1][File]]
     - [[#findutils][Findutils]]
     - [[#awk-mawk][Awk (mawk)]]
+    - [[#gettext-gettext-tiny][Gettext (gettext-tiny)]]
   - [[#final][Final]]
-    - [[#toybox-1][Toybox]]
 
 * Partitions
 ** BIOS
@@ -540,7 +541,7 @@ Create the build directory:
 #+BEGIN_SRC shell
   mkdir -v build && cd build
 #+END_SRC
-Configure:
+Configure sources:
 #+BEGIN_SRC shell
   CFLAGS='-g0 -O0'   \
   CXXFLAGS='-g0 -O0' \
@@ -758,7 +759,7 @@ Create the build directory:
 #+BEGIN_SRC shell
   mkdir -v build && cd build
 #+END_SRC
-Configure:
+Configure sources:
 #+BEGIN_SRC shell
   CFLAGS='-g0 -O0'   \
   CXXFLAGS='-g0 -O0' \
@@ -1015,7 +1016,7 @@ Build and install:
   make CC="${CC}" AR="${AR}" RANLIB="${RANLIB}"
   make PREFIX=/tools install
 #+END_SRC
-*** Toybox
+*** TODO Toybox
 Source: https://landley.net/toybox/downloads/toybox-0.8.3.tar.gz \\
 Download and extract the sources:
 #+BEGIN_SRC shell
@@ -1025,9 +1026,49 @@ Download and extract the sources:
 #+END_SRC
 Configure, build and install.
 #+BEGIN_SRC shell
-  CROSS_COMPILE=$YLFS_CPU make defconfig
+  make defconfig
   make
-  PREFIX=${YLFS}/cross-tools make install
+  PREFIX=/tools make install
+#+END_SRC
+*** Coreutils
+Source: https://ftp.gnu.org/gnu/coreutils/coreutils-8.32.tar.xz \\
+Download and extract the sources:
+#+BEGIN_SRC shell
+  wget https://ftp.gnu.org/gnu/coreutils/coreutils-8.32.tar.xz
+  tar -xf coreutils-8.32.tar.xz
+  cd coreutils-8.32
+#+END_SRC
+Create configure script:
+#+BEGIN_SRC shell
+  autoreconf -vif
+#+END_SRC
+Setup the correct values manually, since the configure script doesn't set them
+well:
+#+BEGIN_SRC shell
+  # manually: 
+  cat > config.cache << EOF
+  fu_cv_sys_stat_statfs2_bsize=no
+  ac_cv_func_syncfs=no
+  gl_cv_func_working_mkstemp=yes
+  gl_cv_func_working_acl_get_file=yes
+  EOF
+#+END_SRC
+Supress a test which may can cause an infinite loop:
+#+BEGIN_SRC shell
+  sed -i '/test.lock/s/^/#/' gnulib-tests/gnulib.mk
+#+END_SRC
+Configure sources:
+#+BEGIN_SRC shell
+  ./configure                           \
+      --build=${YLFS_HOST}              \
+      --host=${YLFS_TARGET}             \
+      --prefix=/tools                   \
+      --enable-install-program=hostname \
+      --cache-file=config.cache 
+#+END_SRC
+Build and install:
+#+BEGIN_SRC shell
+  make && make install
 #+END_SRC
 *** Diffutils
 Source: https://ftp.gnu.org/gnu/diffutils/diffutils-3.7.tar.xz \\
@@ -1088,11 +1129,6 @@ Download and extract the sources:
   tar -xf mawk.tar.gz
   cd mawk
 #+END_SRC
+*** Gettext (gettext-tiny)
+Source: http://ftp.barfooze.de/pub/sabotage/tarballs/gettext-tiny-0.3.2.tar.xz \\
 ** Final
-*** Toybox
-Configure, build and install.
-#+BEGIN_SRC shell
-  CROSS_COMPILE=$YLFS_CPU make defconfig
-  make
-  PREFIX=${YLFS}/cross-tools make install
-#+END_SRC
