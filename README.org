@@ -54,6 +54,9 @@
     - [[#bzip2][Bzip2]]
     - [[#toybox][Toybox]]
     - [[#diffutils][Diffutils]]
+    - [[#file-1][File]]
+    - [[#findutils][Findutils]]
+    - [[#awk-mawk][Awk (mawk)]]
   - [[#final][Final]]
     - [[#toybox-1][Toybox]]
 
@@ -807,7 +810,7 @@ Clean the outputed file:
 #+BEGIN_SRC shell
   rm -v a.out test.c 
 #+END_SRC
-*** TCL
+*** TODO TCL
 Source: https://downloads.sourceforge.net/tcl/tcl8.6.10-src.tar.gz \\
 Download and extract the sources:
 #+BEGIN_SRC shell
@@ -866,7 +869,7 @@ Build and install:
 Source: https://ftp.gnu.org/gnu/dejagnu/dejagnu-1.6.2.tar.gz \\
 Download and extract the sources:
 #+BEGIN_SRC shell
-  wget http://ftp.gnu.org/gnu/dejagnu/dejagnu-1.6.2.tar.gz
+  wget https://ftp.gnu.org/gnu/dejagnu/dejagnu-1.6.2.tar.gz
   tar -xf dejagnu-1.6.2.tar.gz
   cd dejagnu-1.6.2
 #+END_SRC
@@ -885,7 +888,7 @@ Build and install:
 Source: https://ftp.gnu.org/gnu/m4/m4-1.4.18.tar.xz \\
 Download and extract the sources:
 #+BEGIN_SRC shell
-  wget http://ftp.gnu.org/gnu/m4/m4-1.4.18.tar.xz
+  wget https://ftp.gnu.org/gnu/m4/m4-1.4.18.tar.xz
   tar -xf m4-1.4.18.tar.xz
   cd m4-1.4.18
 #+END_SRC
@@ -972,9 +975,9 @@ Build and install:
 Source: https://ftp.gnu.org/gnu/bison/bison-3.7.1.tar.xz \\
 Download and extract the sources:
 #+BEGIN_SRC shell
-  wget http://ftp.gnu.org/gnu/m4/m4-1.4.18.tar.xz
-  tar -xf m4-1.4.18.tar.xz
-  cd m4-1.4.18
+  wget https://ftp.gnu.org/gnu/bison/bison-3.7.1.tar.xz
+  tar -xf bison-3.7.1.tar.xz
+  cd bison-3.7.1
 #+END_SRC
 Configure sources:
 #+BEGIN_SRC shell
@@ -1044,6 +1047,46 @@ Configure sources:
 Build and install:
 #+BEGIN_SRC shell
   make && make install
+#+END_SRC
+*** File
+Configure sources:
+#+BEGIN_SRC shell
+  ./configure               \
+      --build=${YLFS_HOST}  \
+      --host=${YLFS_TARGET} \
+      --prefix=/tools
+#+END_SRC
+Build and install:
+#+BEGIN_SRC shell
+  make && make install
+#+END_SRC
+*** Findutils
+Source: https://ftp.gnu.org/gnu/findutils/findutils-4.7.0.tar.xz \\
+Patch sources:
+#+BEGIN_SRC shell
+  sed -i 's/IO_ftrylockfile/IO_EOF_SEEN/' gl/lib/*.c
+  sed -i '/unistd/a #include <sys/sysmacros.h>' gl/lib/mountlist.c
+  echo "#define _IO_IN_BACKUP 0x100" >> gl/lib/stdio-impl.h
+#+END_SRC
+Configure sources:
+#+BEGIN_SRC shell
+  ./configure               \
+      --build=${YLFS_HOST}  \
+      --host=${YLFS_TARGET} \
+      --prefix=/tools
+#+END_SRC
+Build and install:
+#+BEGIN_SRC shell
+  make && make install
+#+END_SRC
+*** Awk (mawk)
+Source: https://invisible-island.net/datafiles/release/mawk.tar.gz \\
+It may switch to =nawk=.
+Download and extract the sources:
+#+BEGIN_SRC shell
+  wget https://invisible-island.net/datafiles/release/mawk.tar.gz
+  tar -xf mawk.tar.gz
+  cd mawk
 #+END_SRC
 ** Final
 *** Toybox
