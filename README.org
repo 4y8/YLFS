@@ -2,20 +2,21 @@
 - [[#partitions][Partitions]]
   - [[#bios][BIOS]]
   - [[#uefi][UEFI]]
-- [[#packages][Packages]]
-  - [[#preparation][Preparation]]
+- [[#preparation][Preparation]]
     - [[#cpu-configuration][CPU configuration]]
       - [[#x86_64][x86_64]]
       - [[#i686][i686]]
       - [[#arm][ARM]]
-  - [[#cross-tools][Cross tools]]
+- [[#cross-tools][Cross tools]]
+  - [[#packages][Packages]]
     - [[#binutils][Binutils]]
     - [[#kernel-headers][Kernel Headers]]
     - [[#gcc-static][GCC Static]]
     - [[#musl][Musl]]
     - [[#gcc-final][GCC Final]]
     - [[#file][File]]
-  - [[#tool-chain][Tool Chain]]
+- [[#tool-chain][Tool Chain]]
+  - [[#packages-1][Packages]]
     - [[#musl-1][Musl]]
       - [[#x86_64-1][x86_64]]
       - [[#i686-1][i686]]
@@ -68,7 +69,12 @@
     - [[#tar][Tar]]
     - [[#xz][Xz]]
     - [[#lzip][Lzip]]
-  - [[#final][Final]]
+- [[#final-system][Final system]]
+  - [[#preparation-1][Preparation]]
+    - [[#clean-3][Clean]]
+    - [[#ownership][Ownership]]
+    - [[#vkfs][VKFS]]
+    - [[#chroot][Chroot]]
 
 * Partitions
 ** BIOS
@@ -97,8 +103,7 @@ Finally, mount the partitions in the =/mnt/ylfs= directory:
   mount /dev/sda1 ${YLFS}/boot
 #+END_SRC
 ** TODO UEFI
-* Packages
-** Preparation
+* Preparation
 Prepare the directories for the sources and patches:
 #+BEGIN_SRC shell
   mkdir -v ${YLFS}/sources
@@ -171,7 +176,8 @@ Set build options for armv6 CPUs:
   export YLFS_ARCH="arm"
   export YLFS_CPU="armv6"
 #+END_SRC
-** Cross tools
+* Cross tools
+** Packages
 *** Binutils
 Source: https://ftp.gnu.org/gnu/binutils/binutils-2.35.tar.xz \\
 Download and extract the sources:
@@ -381,7 +387,8 @@ Build and install:
 #+BEGIN_SRC shell
   make && make install
 #+END_SRC
-** Tool Chain
+* Tool Chain
+** Packages
 *** Musl
 Configure sources:
 #+BEGIN_SRC shell
@@ -390,7 +397,7 @@ Configure sources:
     --prefix=/ \
     --target=${YLFS_TARGET}
 #+END_SRC
-Build and install: 
+Build and install:
 #+BEGIN_SRC shell
   make && make DESTDIR=/tools install
 #+END_SRC
@@ -459,7 +466,7 @@ Output should be: =[Requesting program interpreter: /tools/lib/ld-musl-arm.so.1]
 **** Clean
 Clean the outputed file:
 #+BEGIN_SRC shell
-  rm -v a.out test.c 
+  rm -v a.out test.c
 #+END_SRC
 *** Setup
 Export variables to use cross-tools:
@@ -578,7 +585,7 @@ Configure sources:
       --disable-libstdcxx-pch                        \
       --disable-symvers                              \
       --disable-libitm                               \
-      --disable-libsanitizer 
+      --disable-libsanitizer
 #+END_SRC
 Build and install:
 #+BEGIN_SRC shell
@@ -657,7 +664,7 @@ Output should be: =[Requesting program interpreter: /tools/lib/ld-musl-arm.so.1]
 **** Clean
 Clean the outputed file:
 #+BEGIN_SRC shell
-  rm -v a.out test.c 
+  rm -v a.out test.c
 #+END_SRC
 *** Libstdcxx
 Has to be done in the =gcc= source directory.\\
@@ -789,7 +796,7 @@ Configure sources:
       --disable-libstdcxx-pch                        \
       --disable-symvers                              \
       --disable-libitm                               \
-      --disable-libsanitizer 
+      --disable-libsanitizer
 #+END_SRC
 Build and install:
 #+BEGIN_SRC shell
@@ -818,7 +825,7 @@ Output should be: =[Requesting program interpreter: /tools/lib/ld-musl-arm.so.1]
 **** Clean
 Clean the outputed file:
 #+BEGIN_SRC shell
-  rm -v a.out test.c 
+  rm -v a.out test.c
 #+END_SRC
 *** TODO TCL
 Source: https://downloads.sourceforge.net/tcl/tcl8.6.10-src.tar.gz \\
@@ -1254,7 +1261,7 @@ Download and extract the sources:
   wget https://github.com/arsv/perl-cross/releases/download/1.3.4/perl-cross-1.3.4.tar.gz
   tar -xf perl-5.32.0.tar.xz
   tar -xf perl-cross-1.3.4.tar.gz
-  cd prel-5.32.0
+  cd perl-5.32.0
   mv -v ../perl-cross-1.3.4/* ./
   mv -v ../perl-cross-1.3.4/utils/* utils/
 #+END_SRC
@@ -1331,6 +1338,7 @@ Build and install:
 #+BEGIN_SRC shell
   make && make install
 #+END_SRC
+*** Lzip
 Source: http://download.savannah.gnu.org/releases/lzip/lzip-1.21.tar.gz \\
 Download and extract the sources:
 #+BEGIN_SRC shell
@@ -1344,11 +1352,66 @@ Configure sources:
 #+END_SRC
 Force =make= to use the new =g++= instead of the host's one:
 #+BEGIN_SRC shell
-sed -i 's/CXX = g++/CXX = ${MLFS_TARGET}-g++/g' Makefile
+sed -i 's/CXX = g++/CXX = ${YLFS_TARGET}-g++/g' Makefile
 #+END_SRC
 Build and install:
 #+BEGIN_SRC shell
   make && make install
 #+END_SRC
-*** Lzip
-** Final
+* Final system
+** Preparation
+*** Clean
+Remove debug symbols:
+#+BEGIN_SRC shell
+  strip --strip-debug /tools/lib/*
+  /usr/bin/strip --strip-unneeded /tools/{,s}bin/*
+#+END_SRC
+Remove the documentation:
+#+BEGIN_SRC shell
+  rm -rf /tools/{,share}/{info,man,doc}
+#+END_SRC
+Remove unneeded files:
+#+BEGIN_SRC shell
+  find /tools/{lib,libexec} -name \*.la -delete
+#+END_SRC
+*** Ownership
+Change tools directory's owner to avoid later conflicts:
+#+BEGIN_SRC shell
+  chown -R root:root ${YLFS}/tools
+#+END_SRC
+*** VKFS
+Switch to root user:
+#+BEGIN_SRC shell
+  sudo su
+#+END_SRC
+Export again variables:
+#+BEGIN_SRC shell
+  export YLFS=/mnt/ylfs
+#+END_SRC
+Create new directories and nodes:
+#+BEGIN_SRC shell
+  mkdir -pv ${YLFS}/{dev,proc,sys,run}
+  mknod -m 600 ${YLFS}/dev/console c 5 1
+  mknod -m 666 ${YLFS}/dev/null c 1 3
+#+END_SRC
+Mount the new virtual file system:
+#+BEGIN_SRC shell
+  mount -v --bind /dev ${YLFS}/dev
+  mount -vt devpts devpts ${YLFS}/dev/pts -o gid=5,mode=620
+  mount -vt proc proc ${YLFS}/proc
+  mount -vt sysfs sysfs ${YLFS}/sys
+  mount -vt tmpfs tmpfs ${YLFS}/run
+  if [ -h ${YLFS}/dev/shm ]; then
+    mkdir -pv ${YLFS}/$(readlink ${YLFS}/dev/shm)
+  fi
+#+END_SRC
+*** Chroot
+Enter the chroot:
+#+BEGIN_SRC shell
+  chroot "$YLFS" /tools/bin/env -i \
+      HOME=/root                  \
+      TERM="$TERM"                \
+      PS1='(ylfs chroot) \u:\w\$ ' \
+      PATH=/bin:/usr/bin:/sbin:/usr/sbin:/tools/bin \
+      /tools/bin/bash --login +h
+#+END_SRC
