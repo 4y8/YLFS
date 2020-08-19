@@ -59,6 +59,10 @@
     - [[#findutils][Findutils]]
     - [[#awk-mawk][Awk (mawk)]]
     - [[#gettext-gettext-tiny][Gettext (gettext-tiny)]]
+    - [[#grep][Grep]]
+    - [[#gzip][Gzip]]
+    - [[#make][Make]]
+    - [[#patch][Patch]]
   - [[#final][Final]]
 
 * Partitions
@@ -1045,7 +1049,6 @@ Create configure script:
 Setup the correct values manually, since the configure script doesn't set them
 well:
 #+BEGIN_SRC shell
-  # manually: 
   cat > config.cache << EOF
   fu_cv_sys_stat_statfs2_bsize=no
   ac_cv_func_syncfs=no
@@ -1103,6 +1106,11 @@ Build and install:
 #+END_SRC
 *** Findutils
 Source: https://ftp.gnu.org/gnu/findutils/findutils-4.7.0.tar.xz \\
+#+BEGIN_SRC shell
+  wget https://ftp.gnu.org/gnu/findutils/findutils-4.7.0.tar.xz 
+  tar -xf findutils-4.7.0.tar.xz 
+  cd findutils-4.7.0
+#+END_SRC
 Patch sources:
 #+BEGIN_SRC shell
   sed -i 's/IO_ftrylockfile/IO_EOF_SEEN/' gl/lib/*.c
@@ -1131,4 +1139,81 @@ Download and extract the sources:
 #+END_SRC
 *** Gettext (gettext-tiny)
 Source: http://ftp.barfooze.de/pub/sabotage/tarballs/gettext-tiny-0.3.2.tar.xz \\
+*** Grep
+Source: https://ftp.gnu.org/gnu/grep/grep-3.4.tar.xz \\
+Download and extract the sources:
+#+BEGIN_SRC shell
+  wget https://ftp.gnu.org/gnu/grep/grep-3.4.tar.xz
+  tar -xf grep-3.4.tar.xz
+  cd grep-3.4
+#+END_SRC
+Configure sources:
+#+BEGIN_SRC shell
+  ./configure               \
+      --build=${YLFS_HOST}  \
+      --host=${YLFS_TARGET} \
+      --prefix=/tools
+#+END_SRC
+Build and install:
+#+BEGIN_SRC shell
+  make && make install
+#+END_SRC
+*** Gzip
+Source: https://ftp.gnu.org/gnu/gzip/gzip-1.10.tar.xz \\
+Download and extract the sources:
+#+BEGIN_SRC shell
+  wget https://ftp.gnu.org/gnu/gzip/gzip-1.10.tar.xz
+  tar -xf gzip-1.10.tar.xz
+  cd gzip-1.10
+#+END_SRC
+Configure sources:
+#+BEGIN_SRC shell
+  ./configure               \
+      --build=${YLFS_HOST}  \
+      --host=${YLFS_TARGET} \
+      --prefix=/tools
+#+END_SRC
+Build and install:
+#+BEGIN_SRC shell
+  make && make install
+#+END_SRC
+*** Make
+Source: https://ftp.gnu.org/gnu/make/make-4.3.tar.xz \\
+Download and extract the sources:
+#+BEGIN_SRC shell
+  wget https://ftp.gnu.org/gnu/make/make-4.3.tar.gz
+  tar -xf make-4.3.tar.xz
+  cd make-4.3
+#+END_SRC
+Configure sources:
+#+BEGIN_SRC shell
+  ./configure               \
+      --build=${YLFS_HOST}  \
+      --host=${YLFS_TARGET} \
+      --without-guile       \
+      --prefix=/tools
+#+END_SRC
+Build and install:
+#+BEGIN_SRC shell
+  make && make install
+#+END_SRC
+*** Patch
+Source: https://ftp.gnu.org/gnu/patch/patch-2.7.6.tar.xz \\
+Download and extract the sources:
+#+BEGIN_SRC shell
+  wget https://ftp.gnu.org/gnu/patch/patch-2.7.6.tar.xz
+  tar -xf patch-2.7.6.tar.xz
+  cd patch-2.7.6
+#+END_SRC
+Configure sources:
+#+BEGIN_SRC shell
+  ./configure               \
+      --build=${YLFS_HOST}  \
+      --host=${YLFS_TARGET} \
+      --prefix=/tools
+#+END_SRC
+Build and install:
+#+BEGIN_SRC shell
+  make && make install
+#+END_SRC
 ** Final
