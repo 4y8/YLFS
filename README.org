@@ -45,9 +45,12 @@
       - [[#test-compiler][Test compiler]]
       - [[#clean-2][Clean]]
     - [[#tcl][TCL]]
+    - [[#expect][Expect]]
     - [[#dejagnu][DejaGNU]]
     - [[#m4][M4]]
     - [[#ncurses][Ncurses]]
+    - [[#bash][Bash]]
+    - [[#bison][Bison]]
   - [[#final][Final]]
     - [[#toybox][Toybox]]
 
@@ -120,7 +123,7 @@ Add multicore compilation:
 #+END_SRC
 Add future tools to the path:
 #+BEGIN_SRC shell
-  PATH=/cross-tools:$PATH
+  PATH=/cross-tools/bin:/tools/bin:$PATH
 #+END_SRC
 *** CPU configuration
 **** x86_64
@@ -661,7 +664,7 @@ Configure sources:
       --disable-nls                   \
       --disable-libstdcxx-threads     \
       --disable-libstdcxx-pch         \
-      --with-gxx-include-dir=/tools/${YLFS_TARGET}/include/c++/9.1.0
+      --with-gxx-include-dir=/tools/${YLFS_TARGET}/include/c++/10.2.0
 #+END_SRC
 Build and install:
 #+BEGIN_SRC shell
@@ -703,7 +706,7 @@ Delete the old build directory:
 #+BEGIN_SRC shell
   rm -rf build/
 #+END_SRC
-Create a full version of the insternal header as what the normal gcc build
+Create a full version of the internal header as what the normal gcc build
 system would do:
 #+BEGIN_SRC shell
   cat gcc/limitx.h gcc/glimits.h gcc/limity.h > \
@@ -807,7 +810,7 @@ Download and extract the sources:
 #+BEGIN_SRC shell
   wget https://downloads.sourceforge.net/tcl/tcl8.6.10-src.tar.gz
   tar -xf tcl8.6.10-src.tar.gz
-  cd tcl8.6.10-src/unix
+  cd tcl8.6.10/unix
 #+END_SRC
 Configure sources:
 #+BEGIN_SRC shell
@@ -826,6 +829,35 @@ Install headers:
   chmod -v u+w /tools/lib/libtcl8.6.so
   make install-private-headers
   ln -sv tclsh8.6 /tools/bin/tcls
+#+END_SRC
+*** Expect
+Source: https://downloads.sourceforge.net/project/expect/Expect/5.45.4/expect5.45.4.tar.gz \\
+Download and extract the sources:
+#+BEGIN_SRC shell
+  wget https://downloads.sourceforge.net/project/expect/Expect/5.45.4/expect5.45.4.tar.gz
+  tar -xf expect5.45.4.tar.gz
+  cd expect5.45.4
+#+END_SRC
+Update files to support Musl Libc for configure:
+#+BEGIN_SRC shell
+cp -v ../../files/config.guess-musl tclconfig/config.guess
+cp -v ../../files/config.sub-musl tclconfig/config.sub
+cp -v configure{,.orig}
+sed 's:/usr/local/bin:/bin:' configure.orig > configure
+#+END_SRC
+Configure sources:
+#+BEGIN_SRC shell
+  ./configure               \
+      --build=${YLFS_HOST}  \
+      --host=${YLFS_TARGET} \
+      --prefix=/tools       \
+      --with-tcl=/tools/lib \
+      --with-tclinclude=/tools/include
+
+#+END_SRC
+Build and install:
+#+BEGIN_SRC shell
+  make && make SCRIPTS="" install
 #+END_SRC
 *** DejaGNU
 Source: https://ftp.gnu.org/gnu/dejagnu/dejagnu-1.6.2.tar.gz \\
@@ -889,7 +921,59 @@ Configure sources:
       --enable-widec        \
       --enable-overwrite    \
       --with-build-cc="gcc -D_GNU_SOURCE"
-
+#+END_SRC
+Build and install:
+#+BEGIN_SRC shell
+  make && make install
+#+END_SRC
+*** Bash
+Source: https://ftp.gnu.org/gnu/bash/bash-5.0.tar.gz \\
+#+END_SRC
+Setup the correct values manually, since the configure script doesn't set them
+well:
+#+BEGIN_SRC shell
+  cat > config.cache << "EOF"
+  ac_cv_func_mmap_fixed_mapped=yes
+  ac_cv_func_strcoll_works=yes
+  ac_cv_func_working_mktime=yes
+  bash_cv_func_sigsetjmp=present
+  bash_cv_getcwd_malloc=yes
+  bash_cv_job_control_missing=present
+  bash_cv_printf_a_format=yes
+  bash_cv_sys_named_pipes=present
+  bash_cv_ulimit_maxfds=yes
+  bash_cv_under_sys_siglist=yes
+  bash_cv_unusable_rtsigs=no
+  gt_cv_int_divbyzero_sigfpe=yes
+  EOF
+#+END_SRC
+Configure sources:
+#+BEGIN_SRC shell
+    ./configure               \
+        --prefix=/tools       \
+        --without-bash-malloc \
+        --build=${YLFS_HOST}  \
+        --host=${YLFS_TARGET} \
+        --cache-file=config.cache
+#+END_SRC
+Build and install:
+#+BEGIN_SRC shell
+  make && make install
+#+END_SRC
+*** Bison
+Source: https://ftp.gnu.org/gnu/bison/bison-3.7.1.tar.xz \\
+Download and extract the sources:
+#+BEGIN_SRC shell
+  wget http://ftp.gnu.org/gnu/m4/m4-1.4.18.tar.xz
+  tar -xf m4-1.4.18.tar.xz
+  cd m4-1.4.18
+#+END_SRC
+Configure sources:
+#+BEGIN_SRC shell
+  ./configure               \
+      --build=${YLFS_HOST}  \
+      --host=${YLFS_TARGET} \
+      --prefix=/tools
 #+END_SRC
 Build and install:
 #+BEGIN_SRC shell
