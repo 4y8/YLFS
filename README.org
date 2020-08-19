@@ -51,8 +51,11 @@
     - [[#ncurses][Ncurses]]
     - [[#bash][Bash]]
     - [[#bison][Bison]]
-  - [[#final][Final]]
+    - [[#bzip2][Bzip2]]
     - [[#toybox][Toybox]]
+    - [[#diffutils][Diffutils]]
+  - [[#final][Final]]
+    - [[#toybox-1][Toybox]]
 
 * Partitions
 ** BIOS
@@ -830,7 +833,7 @@ Install headers:
   make install-private-headers
   ln -sv tclsh8.6 /tools/bin/tcls
 #+END_SRC
-*** Expect
+*** TODO Expect
 Source: https://downloads.sourceforge.net/project/expect/Expect/5.45.4/expect5.45.4.tar.gz \\
 Download and extract the sources:
 #+BEGIN_SRC shell
@@ -859,7 +862,7 @@ Build and install:
 #+BEGIN_SRC shell
   make && make SCRIPTS="" install
 #+END_SRC
-*** DejaGNU
+*** TODO DejaGNU
 Source: https://ftp.gnu.org/gnu/dejagnu/dejagnu-1.6.2.tar.gz \\
 Download and extract the sources:
 #+BEGIN_SRC shell
@@ -928,6 +931,11 @@ Build and install:
 #+END_SRC
 *** Bash
 Source: https://ftp.gnu.org/gnu/bash/bash-5.0.tar.gz \\
+Download and extract the sources:
+#+BEGIN_SRC shell
+  wget https://ftp.gnu.org/gnu/bash/bash-5.0.tar.gz
+  tar -xf bash-5.0.tar.gz
+  cd bash-5.0
 #+END_SRC
 Setup the correct values manually, since the configure script doesn't set them
 well:
@@ -979,7 +987,31 @@ Build and install:
 #+BEGIN_SRC shell
   make && make install
 #+END_SRC
-** Final
+*** Bzip2
+Source: https://sourceware.org/pub/bzip2/bzip2-1.0.8.tar.gz \\
+Download and extract the sources:
+#+BEGIN_SRC shell
+  wget https://sourceware.org/pub/bzip2/bzip2-1.0.8.tar.gz
+  tar -xf bzip2-1.0.8.tar.gz
+  cd bzip2-1.0.8
+#+END_SRC
+Fix =Makefiles= to install links and man pages in the correct location:
+#+BEGIN_SRC shell
+  cp Makefile{,.orig}
+  sed -e "/^all:/s/ test//" Makefile.orig > Makefile
+  sed -i 's@\(ln -s -f \)$(PREFIX)/bin/@\1@' Makefile
+  sed -i "s@(PREFIX)/man@(PREFIX)/share/man@g" Makefile
+#+END_SRC
+Clean and prepare sources:
+#+BEGIN_SRC shell
+  make -f Makefile-libbz2_so CC="${CC}" AR="${AR}" RANLIB="${RANLIB}"
+  make clean
+#+END_SRC
+Build and install:
+#+BEGIN_SRC shell
+  make CC="${CC}" AR="${AR}" RANLIB="${RANLIB}"
+  make PREFIX=/tools install
+#+END_SRC
 *** Toybox
 Source: https://landley.net/toybox/downloads/toybox-0.8.3.tar.gz \\
 Download and extract the sources:
@@ -988,6 +1020,33 @@ Download and extract the sources:
   tar -xf toybox-0.8.3.tar.gz
   cd toybox-0.8.3
 #+END_SRC
+Configure, build and install.
+#+BEGIN_SRC shell
+  CROSS_COMPILE=$YLFS_CPU make defconfig
+  make
+  PREFIX=${YLFS}/cross-tools make install
+#+END_SRC
+*** Diffutils
+Source: https://ftp.gnu.org/gnu/diffutils/diffutils-3.7.tar.xz \\
+Download and extract the sources:
+#+BEGIN_SRC shell
+  wget https://ftp.gnu.org/gnu/diffutils/diffutils-3.7.tar.xz
+  tar -xf diffutils-3.7.tar.xz
+  cd diffutils-3.7
+#+END_SRC
+Configure sources:
+#+BEGIN_SRC shell
+  ./configure               \
+      --build=${YLFS_HOST}  \
+      --host=${YLFS_TARGET} \
+      --prefix=/tools
+#+END_SRC
+Build and install:
+#+BEGIN_SRC shell
+  make && make install
+#+END_SRC
+** Final
+*** Toybox
 Configure, build and install.
 #+BEGIN_SRC shell
   CROSS_COMPILE=$YLFS_CPU make defconfig
