@@ -119,8 +119,8 @@ Prepare the directories for the sources and patches:
 #+END_SRC
 Link directories:
 #+BEGIN_SRC shell
-  ln -sv $YLFS/cross-tools /
-  ln -sv $YLFS/tools /
+  ln -sv ${YLFS}/cross-tools /
+  ln -sv ${YLFS}/tools /
 #+END_SRC
 Create a new user for the installation of tools:
 #+BEGIN_SRC shell
@@ -234,11 +234,11 @@ Clean sources:
 #+END_SRC
 Build headers:
 #+BEGIN_SRC shell
-  ARCH=$YLFS_ARCH make headers_check
+  ARCH=${YLFS_ARCH} make headers_check
 #+END_SRC
 Install and clean:
 #+BEGIN_SRC shell
-  ARCH=$YLFS_ARCH make headers
+ARCH=${YLFS_ARCH} make headers
   rm usr/include/Makefile
   mkdir -pv /cross-tools/${YLFS_TARGET}/include
   cp -rv usr/include/* /cross-tools/${YLFS_TARGET}/include
@@ -572,7 +572,7 @@ Configure sources:
       --build=${YLFS_HOST}                           \
       --host=${YLFS_TARGET}                          \
       --prefix=/tools                                \
-      --with-sysroot=$YLFS                           \
+      --with-sysroot=${YLFS}                           \
       --with-newlib                                  \
       --without-headers                              \
       --with-local-prefix=/tools                     \
@@ -712,7 +712,7 @@ Configure sources:
 #+BEGIN_SRC shell
   ../configure                   \
       --prefix=/tools            \
-      --with-sysroot=${YLFS}     \
+      --with-sysroot             \
       --with-lib-path=/tools/lib \
       --build=${YLFS_HOST}       \
       --host=${YLFS_TARGET}      \
@@ -739,7 +739,7 @@ Create a full version of the internal header as what the normal gcc build
 system would do:
 #+BEGIN_SRC shell
   cat gcc/limitx.h gcc/glimits.h gcc/limity.h > \
-    $(dirname $($YLFS_TARGET-gcc -print-libgcc-file-name))/include-fixed/limits.h
+    $(dirname $(${YLFS}_TARGET-gcc -print-libgcc-file-name))/include-fixed/limits.h
 #+END_SRC
 **** Fix GCC linker
 Fix GCC's default dynamic linker to use the one compiled in =/tools=.
@@ -783,8 +783,6 @@ Create the build directory:
 #+END_SRC
 Configure sources:
 #+BEGIN_SRC shell
-  CFLAGS='-g0 -O0'   \
-  CXXFLAGS='-g0 -O0' \
   ../configure                                       \
       --target=${YLFS_TARGET}                        \
       --build=${YLFS_HOST}                           \
@@ -1414,7 +1412,7 @@ Mount the new virtual file system:
 *** Chroot
 Enter the chroot:
 #+BEGIN_SRC shell
-  chroot "$YLFS" /tools/bin/env -i \
+  chroot "${YLFS}" /tools/bin/env -i \
       HOME=/root                  \
       TERM="$TERM"                \
       PS1='(ylfs chroot) \u:\w\$ ' \
