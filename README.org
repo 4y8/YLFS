@@ -78,6 +78,9 @@
     - [[#directories][Directories]]
     - [[#files][Files]]
   - [[#packages-2][Packages]]
+    - [[#kernel-headers-2][Kernel Headers]]
+    - [[#man-pages][Man pages]]
+    - [[#musl-2][Musl]]
 
 * Partitions
 ** BIOS
@@ -1495,3 +1498,71 @@ Create log files and give them correct permissions:
   chmod -v 600  /var/log/btmp
 #+END_SRC
 ** Packages
+*** Kernel Headers
+Clean sources:
+#+BEGIN_SRC shell
+  make mrproper
+#+END_SRC
+Build headers:
+#+BEGIN_SRC shell
+  make headers
+#+END_SRC
+Clean:
+#+BEGIN_SRC shell
+  find usr/include '.*' -delete
+  rm usr/include/Makefile
+#+END_SRC
+Install headers
+#+BEGIN_SRC shell
+  cp -rv usr/include/* /usr/include
+#+END_SRC
+*** Man pages
+Source: https://www.kernel.org/pub/linux/docs/man-pages/man-pages-5.08.tar.xz \\
+Download and extract the sources:
+#+BEGIN_SRC shell
+  wget https://www.kernel.org/pub/linux/docs/man-pages/man-pages-5.08.tar.xz
+  tar -xf man-pages-5.08.tar.xz
+  cd man-pages-5.08
+#+END_SRC
+Install:
+#+BEGIN_SRC shell
+  make install
+#+END_SRC
+*** Musl
+Configure sources:
+#+BEGIN_SRC shell
+  ./configure --prefix=/usr -disable-gcc-wrapper
+#+END_SRC
+Build and install:
+#+BEGIN_SRC shell
+  make && make install
+#+END_SRC
+Setup =arch=:
+#+BEGIN_SRC shell
+  case $(uname -m) in
+    x86_64) export ARCH="x86_64"
+            ;;
+    i686)   export ARCH="i386"
+            ;;
+    arm*)   export ARCH="arm"
+            ;;
+  esac
+#+END_SRC
+Link =ldd=:
+#+BEGIN_SRC shell
+  ln -sv /lib/ld-musl-$ARCH.so.1 /bin/ldd
+#+END_SRC
+Config for dynamic library loading:
+#+BEGIN_SRC shell
+  cat > /etc/ld-musl-$ARCH.path << "EOF"
+  /lib
+  /usr/local/lib
+  /usr/lib
+  EOF
+
+  unset ARCH
+#+END_SRC
+Link a fake =ldconfig=:
+#+BEGIN_SRC shell
+  ln -s /bin/true /usr/bin/ldconfig
+#+END_SRC
