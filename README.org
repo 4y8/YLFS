@@ -81,6 +81,12 @@
     - [[#kernel-headers-2][Kernel Headers]]
     - [[#man-pages][Man pages]]
     - [[#musl-2][Musl]]
+    - [[#system-time][System time]]
+    - [[#adjust-toolchain][Adjust toolchain]]
+      - [[#cpu-configuration-1][CPU configuration]]
+      - [[#adjust-linker-and-toolchain][Adjust linker and toolchain]]
+      - [[#other-tests][Other tests]]
+    - [[#argp][Argp]]
 
 * Partitions
 ** BIOS
@@ -138,6 +144,7 @@ Adapt the permissions of the build directories:
 Login as the =ylfs= user:
 #+BEGIN_SRC shell
   su - ylfs
+  export YLFS=/mnt/ylfs
 #+END_SRC
 Clear compilation C flags:
 #+BEGIN_SRC shell
@@ -156,14 +163,14 @@ Add future tools to the path:
 **** x86_64
 Set build options for 64 bit CPUs:
 #+BEGIN_SRC shell
-  export YLFS_TARGET="x86_64-linux-musl"
+  export YLFS_TARGET="x86_64-ylfs-linux-musl"
   export YLFS_ARCH="x86"
   export YLFS_CPU="x86-64"
 #+END_SRC
 **** i686
 Set build options for 32 bit CPUs:
 #+BEGIN_SRC shell
-  export YLFS_TARGET="i686-linux-musl"
+  export YLFS_TARGET="i686-ylfs-linux-musl"
   export YLFS_ARCH="x86"
   export YLFS_CPU="i686"
 #+END_SRC
@@ -171,14 +178,14 @@ Set build options for 32 bit CPUs:
 ***** armv7
 Set build options for armv7 CPUs:
 #+BEGIN_SRC shell
-  export YLFS_TARGET="armv7l-linux-musl"
+  export YLFS_TARGET="armv7l-ylfs-linux-musl"
   export YLFS_ARCH="arm"
   export YLFS_CPU="armv7-a"
 #+END_SRC
 ***** armv6
 Set build options for armv6 CPUs:
 #+BEGIN_SRC shell
-  export YLFS_TARGET="armv6l-linux-musl"
+  export YLFS_TARGET="armv6l-ylfs-linux-musl"
   export YLFS_ARCH="arm"
   export YLFS_CPU="armv6"
 #+END_SRC
@@ -238,7 +245,7 @@ Build headers:
 #+END_SRC
 Install and clean:
 #+BEGIN_SRC shell
-ARCH=${YLFS_ARCH} make headers
+  ARCH=${YLFS_ARCH} make headers
   rm usr/include/Makefile
   mkdir -pv /cross-tools/${YLFS_TARGET}/include
   cp -rv usr/include/* /cross-tools/${YLFS_TARGET}/include
@@ -339,7 +346,7 @@ Delete the old build directory:
 #+END_SRC
 Use =lib= instead of =lib64=, (for x86_64 only):
 #+BEGIN_SRC shell
-  sed -i '/m64=/s/lib64/lib/' gcc/config/i386/t-linux64
+  sed -i '/m64=/s/lib64/lib/' -i.orig gcc/config/i386/t-linux64
   sed -i 's/lib64/lib/'       gcc/config/i386/linux64.h
 #+END_SRC
 Create the build directory:
@@ -572,7 +579,7 @@ Configure sources:
       --build=${YLFS_HOST}                           \
       --host=${YLFS_TARGET}                          \
       --prefix=/tools                                \
-      --with-sysroot=${YLFS}                           \
+      --with-sysroot=${YLFS}                         \
       --with-newlib                                  \
       --without-headers                              \
       --with-local-prefix=/tools                     \
@@ -739,7 +746,7 @@ Create a full version of the internal header as what the normal gcc build
 system would do:
 #+BEGIN_SRC shell
   cat gcc/limitx.h gcc/glimits.h gcc/limity.h > \
-    $(dirname $(${YLFS}_TARGET-gcc -print-libgcc-file-name))/include-fixed/limits.h
+    $(dirname $(${YLFS_TARGET}-gcc -print-libgcc-file-name))/include-fixed/limits.h
 #+END_SRC
 **** Fix GCC linker
 Fix GCC's default dynamic linker to use the one compiled in =/tools=.
@@ -756,11 +763,6 @@ Fix GCC's default dynamic linker to use the one compiled in =/tools=.
   #define STANDARD_STARTFILE_PREFIX_2 ""' >> $file
     :> $file.orig
   done
-#+END_SRC
-Use =lib= instead of =lib64=, (for x86_64 only):
-#+BEGIN_SRC shell
-  sed -i '/m64=/s/lib64/lib/' gcc/config/i386/t-linux64
-  sed -i 's/lib64/lib/'       gcc/config/i386/linux64.h
 #+END_SRC
 ***** arm
 #+BEGIN_SRC shell
@@ -1049,6 +1051,10 @@ Configure, build and install.
   make defconfig
   make
   PREFIX=/tools make install
+#+END_SRC
+Remove toybox's =grep= and =sed= since GNU ones will be installed:
+#+BEGIN_SRC shell
+  rm /tools/bin/{grep,sed}
 #+END_SRC
 *** Coreutils
 Source: https://ftp.gnu.org/gnu/coreutils/coreutils-8.32.tar.xz \\
@@ -1564,3 +1570,129 @@ Link a fake =ldconfig=:
 #+BEGIN_SRC shell
   ln -s /bin/true /usr/bin/ldconfig
 #+END_SRC
+*** System time
+Source: https://data.iana.org/time-zones/releases/tzdb-2020a.tar.lz\\
+Download and extract the sources:
+#+BEGIN_SRC shell
+  wget https://data.iana.org/time-zones/releases/tzdb-2020a.tar.lz
+  tar -xf tzdb-2020a.tar.lz
+  cd tzdb-2020a
+#+END_SRC
+Build:
+#+BEGIN_SRC shell
+  make TZDIR=/usr/share/zoneinfo
+#+END_SRC
+Install tools:
+#+BEGIN_SRC shell
+  cp -v zic zdump /usr/sbin
+  cp -v tzselect  /usr/bin
+#+END_SRC
+Install data:
+#+BEGIN_SRC shell
+  mkdir -pv /usr/share/zoneinfo/{posix,right}
+  install -m444 -t /usr/share/zoneinfo iso3166.tab zone1970.tab zone.tab
+  export timezones="africa antarctica asia australasia europe northamerica \
+                  southamerica pacificnew etcetera backward systemv factory"
+  zic -y ./yearistype -d /usr/share/zoneinfo ${timezones}
+  zic -y ./yearistype -d /usr/share/zoneinfo/posix ${timezones}
+  zic -y ./yearistype -d /usr/share/zoneinfo/right -L leapseconds ${timezones}
+  zic -y ./yearistype -d /usr/share/zoneinfo -p America/New_York
+  unset timezones
+#+END_SRC
+Set time zone:
+#+BEGIN_SRC shell
+  cp -v /usr/share/zoneinfo/xxx /etc/localtime
+#+END_SRC
+*** Adjust toolchain
+**** CPU configuration
+***** x86_64
+Set build options for 64 bit CPUs:
+#+BEGIN_SRC shell
+  export YLFS_TARGET="x86_64-ylfs-linux-musl"
+#+END_SRC
+***** i686
+Set build options for 32 bit CPUs:
+#+BEGIN_SRC shell
+  export YLFS_TARGET="i686-ylfs-linux-musl"
+#+END_SRC
+***** ARM
+****** armv7
+Set build options for armv7 CPUs:
+#+BEGIN_SRC shell
+  export YLFS_TARGET="armv7l-ylfs-linux-musl"
+#+END_SRC
+****** armv6
+Set build options for armv6 CPUs:
+#+BEGIN_SRC shell
+  export YLFS_TARGET="armv6l-ylfs-linux-musl"
+#+END_SRC
+**** Adjust linker and toolchain
+Save the old linker:
+#+BEGIN_SRC shell
+  mv -v /tools/bin/{ld,ld-old}
+  mv -v /tools/${YLFS_TARGET}/bin/{ld,ld-old}
+  mv -v /tools/bin/{ld-new,ld}
+  ln -sv /tools/bin/ld /tools/${YLFS_TARGET}/bin/ld
+#+END_SRC
+Fix the compiler specification:
+#+BEGIN_SRC shell
+  export SPECFILE=`dirname $(gcc -print-libgcc-file-name)`/specs
+  gcc -dumpspecs | sed -e 's@/tools@@g'                   \
+      -e '/\*startfile_prefix_spec:/{n;s@.*@/usr/lib/ @}' \
+      -e '/\*cpp:/{n;s@$@ -isystem /usr/include@}' >  tempspecfile
+
+  mv -vf tempspecfile $SPECFILE &&
+  unset SPECFILE
+#+END_SRC
+Create test file to test the compiler:
+#+BEGIN_SRC shell
+  echo 'int main(){}' > test.c
+#+END_SRC
+Compile and test the test file:
+#+BEGIN_SRC shell
+  cc test.c -v -Wl,--verbose &> dummy.log
+  readelf -l a.out | grep Requesting
+#+END_SRC
+***** x86_64
+Output should be: =[Requesting program interpreter: /tools/lib/ld-musl-x86_64.so.1]=.
+***** i686
+Output should be: =[Requesting program interpreter: /tools/lib/ld-musl-i386.so.1]=.
+***** arm
+Output should be: =[Requesting program interpreter: /tools/lib/ld-musl-arm.so.1]=.
+**** Other tests
+Test if the compiler uses the correct start files:
+#+BEGIN_SRC shell
+  grep -o '/usr/lib.*/crt[1in].*succeeded' dummy.log
+#+END_SRC
+Output should be:
+#+BEGIN_SRC shell
+  /usr/lib/crt1.o succeeded
+  /usr/lib/crti.o succeeded
+  /usr/lib/crtn.o succeeded
+#+END_SRC
+Check header files location:
+#+BEGIN_SRC shell
+  grep -B1 '^ /usr/include' dummy.log
+#+END_SRC
+Output should be:
+#+BEGIN_SRC shell
+  #include <...> search starts here:
+  /usr/include
+#+END_SRC
+Verify the linker uses the correct search paths:
+#+BEGIN_SRC shell
+  grep 'SEARCH.*/usr/lib' dummy.log |sed 's|; |\n|g'
+#+END_SRC
+Output should be (the first and last lines are only needed on 64-bit CPUs):
+#+BEGIN_SRC shell
+  SEARCH_DIR("=/tools/x86_64-ylfs-linux-musl/lib64")
+  SEARCH_DIR("/usr/lib")
+  SEARCH_DIR("/lib")
+  SEARCH_DIR("=/tools/x86_64-ylfs-linux-musl/lib")
+#+END_SRC
+Clean the outputed file:
+#+BEGIN_SRC shell
+  rm -v a.out test.c
+#+END_SRC
+*** Argp
+Source: https://www.lysator.liu.se/~nisse/misc/argp-standalone-1.3.tar.gz\\
