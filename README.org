@@ -104,6 +104,7 @@
     - [[#bzip2-1][Bzip2]]
     - [[#pkgconfig][Pkgconfig]]
     - [[#ncurses-1][Ncurses]]
+    - [[#attr][Attr]]
     - [[#toybox-1][Toybox]]
 
 * Partitions
@@ -2125,6 +2126,34 @@ Configure sources:
 Build and install:
 #+BEGIN_SRC shell
   make && make install
+#+END_SRC
+Fix misplaced files:
+#+BEGIN_SRC shell
+  mv -v /usr/lib/libncursesw.so.6* /lib
+  ln -sfv ../../lib/$(readlink /usr/lib/libncursesw.so) /usr/lib/libncursesw.so
+#+END_SRC
+Fix non-wide characters in the linker:
+#+BEGIN_SRC shell
+  Allow linker to be able to find non-wide-character Ncurses libraries
+  for lib in ncurses form panel menu ; do
+      rm -vf                    /usr/lib/lib${lib}.so
+      echo "INPUT(-l${lib}w)" > /usr/lib/lib${lib}.so
+      ln -sfv ${lib}w.pc        /usr/lib/pkgconfig/${lib}.pc
+  done
+#+END_SRC
+Fix =-lcurses=:
+#+BEGIN_SRC shell
+  rm -vf                     /usr/lib/libcursesw.so
+  echo "INPUT(-lncursesw)" > /usr/lib/libcursesw.so
+  ln -sfv libncurses.so      /usr/lib/libcurses.so
+#+END_SRC
+*** Attr
+Source: https://download.savannah.gnu.org/releases/attr/attr-2.4.48.tar.gz \\
+Download and extract the sources:
+#+BEGIN_SRC shell
+  wget https://download.savannah.gnu.org/releases/attr/attr-2.4.48.tar.gz
+  tar -xf attr-2.4.48.tar.gz
+  cd attr-2.4.48
 #+END_SRC
 *** Toybox
 Configure, build and install.
