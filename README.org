@@ -101,6 +101,9 @@
       - [[#setup-truple][Setup TRUPLE]]
       - [[#continue-building][Continue building]]
       - [[#other-tests-1][Other tests]]
+    - [[#bzip2-1][Bzip2]]
+    - [[#pkgconfig][Pkgconfig]]
+    - [[#ncurses-1][Ncurses]]
     - [[#toybox-1][Toybox]]
 
 * Partitions
@@ -124,10 +127,10 @@ Then, activate the swap partition:
 Finally, mount the partitions in the =/mnt/ylfs= directory:
 #+BEGIN_SRC shell
   export YLFS=/mnt/ylfs
-  mkdir -pv ${YLFS}
-  mount /dev/sda3 ${YLFS}
-  mkdir ${YLFS}/boot
-  mount /dev/sda1 ${YLFS}/boot
+  mkdir -pv "$YLFS"
+  mount /dev/sda3 "$YLFS"
+  mkdir "{$YLFS}/boot"
+  mount /dev/sda1 "${YLFS}/boot"
 #+END_SRC
 ** TODO UEFI
 * Preparation
@@ -1401,7 +1404,7 @@ Remove unneeded files:
 *** Ownership
 Change tools directory's owner to avoid later conflicts:
 #+BEGIN_SRC shell
-  chown -R root:root "$YLFS/tools"
+  chown -R root:root "${YLFS}/tools"
 #+END_SRC
 *** VKFS
 Switch to root user:
@@ -1706,7 +1709,7 @@ Output should be (the first and last lines are only needed on 64-bit CPUs):
 #+END_SRC
 Clean the outputed file:
 #+BEGIN_SRC shell
-  rm -v a.out test.c
+  rm -v a.out test.c dummy.log
 #+END_SRC
 *** Argp
 Source: https://www.lysator.liu.se/~nisse/misc/argp-standalone-1.3.tar.gz \\
@@ -1805,7 +1808,6 @@ Build and install:
 #+END_SRC
 *** TODO Bc
 *** Binutils
-
 Delete the old build directory:
 #+BEGIN_SRC shell
   rm -rf build/
@@ -1943,12 +1945,16 @@ Set up an optimization level:
 #+BEGIN_SRC shell
   sed -i "/ac_cpp=/s/\$CPPFLAGS/\$CPPFLAGS -O2/" {gcc,libiberty}/configure
 #+END_SRC
+Create the build directory:
+#+BEGIN_SRC shell
+  mkdir -v build && cd build
+#+END_SRC
 Configure sources:
 #+BEGIN_SRC shell
   SED=sed  libat_cv_have_ifunc=no  \
      ../configure                  \
      --prefix=/usr                 \
-     --build="${TRUPLE}"           \
+     --build="$TRUPLE"             \
      --with-system-zlib            \
      --with-isl                    \
      --with-linker-hash-style=gnu  \
@@ -1972,10 +1978,6 @@ Configure sources:
      --disable-libsanitizer        \
      --disable-target-libiberty    \
      --disable-libunwind-exceptions 
-#+END_SRC
-Create the build directory:
-#+BEGIN_SRC shell
-  mkdir -v build && cd build
 #+END_SRC
 Build and install:
 #+BEGIN_SRC shell
@@ -2008,6 +2010,122 @@ Output should be: =[Requesting program interpreter: /lib/ld-musl-i386.so.1]=.
 ***** arm
 Output should be: =[Requesting program interpreter: /lib/ld-musl-arm.so.1]=.
 **** Other tests
+Test library path:
+#+BEGIN_SRC shell
+  grep 'crt[1in].o succeeded' dummy.log
+#+END_SRC
+Output should be:
+#+BEGIN_SRC shell
+  attempt to open /usr/lib/gcc/$ARCH-linux-musl/10.2.0/../../../../lib/Scrt1.o succeeded
+  attempt to open /usr/lib/gcc/$ARCH-linux-musl/10.2.0/../../../../lib/crti.o succeeded
+  attempt to open /usr/lib/gcc/$ARCH-linux-musl/10.2.0/../../../../lib/crtn.o succeeded
+#+END_SRC
+Test include path:
+#+BEGIN_SRC shell
+  grep -B2 '^ /usr/lib/gcc' dummy.log
+#+END_SRC
+Output should be:
+#+BEGIN_SRC shell
+  #include <...> search starts here:
+  /usr/lib/gcc/$ARCH-linux-musl/10.2.0/include-fixed
+  /usr/local/include
+  /usr/include
+  /usr/lib/gcc/$ARCH-linux-musl/10.2.0/include
+#+END_SRC
+Test search directories:
+#+BEGIN_SRC shell
+  grep 'SEARCH.*/usr/lib' dummy.log |sed 's|; |\n|g'
+#+END_SRC
+Output should be:
+#+BEGIN_SRC shell
+  SEARCH_DIR("/usr/$ARCH-pc-linux-musl/lib32")
+  SEARCH_DIR("/usr/local/lib32")
+  SEARCH_DIR("/lib32")
+  SEARCH_DIR("/usr/lib32")
+  SEARCH_DIR("/usr/$ARCH-pc-linux-musl/lib")
+  SEARCH_DIR("/usr/local/lib")
+  SEARCH_DIR("/lib")
+  SEARCH_DIR("/usr/lib");
+#+END_SRC
+Clean:
+#+BEGIN_SRC shell
+  rm -v test.c a.out dummy.log
+#+END_SRC
+Get utilities:
+#+BEGIN_SRC shell
+  cc -fpie ../files/musl/getent.c -o getent
+  cc -fpie ../files/musl/getconf.c -o getconf
+  cc -fpie ../files/musl/iconv.c -o iconv
+
+  cp -v getent  /usr/bin/
+  cp -v getconf /usr/bin/
+  cp -v iconv   /usr/bin/
+  cp -v ../files/musl/getent.1   /usr/share/man/man1/
+  cp -v ../files/musl/getconf.1  /usr/share/man/man1/
+#+END_SRC
+*** Bzip2
+Patch sources:
+#+BEGIN_SRC shell
+  patch -Np1 -i ../patches/bzip2-1.0.6-install_docs-1.patch
+  sed -i 's@\(ln -s -f \)$(PREFIX)/bin/@\1@' Makefile
+  sed -i "s@(PREFIX)/man@(PREFIX)/share/man@g" Makefile
+#+END_SRC
+Prepare sources:
+#+BEGIN_SRC shell
+  make -f Makefile-libbz2_so
+  make clean
+#+END_SRC
+Build and install:
+#+BEGIN_SRC shell
+  make && make PREFIX=/usr install
+  cp -v bzip2-shared /bin/bzip2
+  cp -av libbz2.so* /lib
+  ln -sv ../../lib/libbz2.so.1.0 /usr/lib/libbz2.so
+  rm -v /usr/bin/{bunzip2,bzcat,bzip2}
+  ln -sv bzip2 /bin/bunzip2
+  ln -sv bzip2 /bin/bzcat
+#+END_SRC
+*** Pkgconfig
+Source: https://pkg-config.freedesktop.org/releases/pkg-config-0.29.2.tar.gz \\
+Download and extract the sources:
+#+BEGIN_SRC shell
+  wget https://pkg-config.freedesktop.org/releases/pkg-config-0.29.2.tar.gz
+  tar -xf pkg-config-0.29.2.tar.gz
+  cd pkg-config-0.29.2
+#+END_SRC
+Configure sources:
+#+BEGIN_SRC shell
+  ./configure                    \
+      --prefix=/usr              \
+      --with-internal-glib       \
+      --disable-host-tool        \
+      --docdir=/usr/share/doc/pkg-config-0.29.2
+
+#+END_SRC
+Build and install:
+#+BEGIN_SRC shell
+  make && make install
+#+END_SRC
+*** Ncurses
+Patch a static library:
+#+BEGIN_SRC shell
+  sed -i '/LIBTOOL_INSTALL/d' c++/Makefile.in
+#+END_SRC
+Configure sources:
+#+BEGIN_SRC shell
+  ./configure                 \
+      --prefix=/usr           \
+      --mandir=/usr/share/man \
+      --with-shared           \
+      --without-debug         \
+      --without-normal        \
+      --enable-pc-files       \
+      --enable-widec
+#+END_SRC
+Build and install:
+#+BEGIN_SRC shell
+  make && make install
+#+END_SRC
 *** Toybox
 Configure, build and install.
 #+BEGIN_SRC shell
