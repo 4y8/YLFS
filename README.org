@@ -98,6 +98,10 @@
     - [[#mpc][MPC]]
     - [[#shadow][Shadow]]
     - [[#gcc][GCC]]
+      - [[#setup-truple][Setup TRUPLE]]
+      - [[#continue-building][Continue building]]
+      - [[#other-tests-1][Other tests]]
+    - [[#toybox-1][Toybox]]
 
 * Partitions
 ** BIOS
@@ -559,8 +563,7 @@ Fix GCC's default dynamic linker to use the one compiled in =/tools=.
 #+END_SRC
 Use =lib= instead of =lib64=, (for x86_64 only):
 #+BEGIN_SRC shell
-  sed -i '/m64=/s/lib64/lib/' gcc/config/i386/t-linux64
-  sed -i 's/lib64/lib/'       gcc/config/i386/linux64.h
+  sed -e '/m64=/s/lib64/lib/' -i.orig gcc/config/i386/t-linux64
 #+END_SRC
 ***** arm
 #+BEGIN_SRC shell
@@ -1398,7 +1401,7 @@ Remove unneeded files:
 *** Ownership
 Change tools directory's owner to avoid later conflicts:
 #+BEGIN_SRC shell
-  chown -R root:root ${YLFS}/tools
+  chown -R root:root "$YLFS/tools"
 #+END_SRC
 *** VKFS
 Switch to root user:
@@ -1417,19 +1420,19 @@ Create new directories and nodes:
 #+END_SRC
 Mount the new virtual file system:
 #+BEGIN_SRC shell
-  mount -v --bind /dev ${YLFS}/dev
-  mount -vt devpts devpts ${YLFS}/dev/pts -o gid=5,mode=620
+  mount -v --bind /dev "$YLFS/dev"
+  mount -vt devpts devpts "$YLFS/dev/pts -o gid=5,mode=620"
   mount -vt proc proc ${YLFS}/proc
   mount -vt sysfs sysfs ${YLFS}/sys
   mount -vt tmpfs tmpfs ${YLFS}/run
   if [ -h ${YLFS}/dev/shm ]; then
-    mkdir -pv ${YLFS}/$(readlink ${YLFS}/dev/shm)
+    mkdir -pv "$YLFS/$(readlink $YLFS/dev/shm)"
   fi
 #+END_SRC
 *** Chroot
 Enter the chroot:
 #+BEGIN_SRC shell
-  chroot "${YLFS}" /tools/bin/env -i                \
+  chroot "$YLFS" /tools/bin/env -i                  \
       HOME=/root                                    \
       TERM="$TERM"                                  \
       PS1='(ylfs chroot) \u:\w\$ '                  \
@@ -1665,11 +1668,11 @@ Compile and test the test file:
   readelf -l a.out | grep Requesting
 #+END_SRC
 ***** x86_64
-Output should be: =[Requesting program interpreter: /tools/lib/ld-musl-x86_64.so.1]=.
+Output should be: =[Requesting program interpreter: /lib/ld-musl-x86_64.so.1]=.
 ***** i686
-Output should be: =[Requesting program interpreter: /tools/lib/ld-musl-i386.so.1]=.
+Output should be: =[Requesting program interpreter: /lib/ld-musl-i386.so.1]=.
 ***** arm
-Output should be: =[Requesting program interpreter: /tools/lib/ld-musl-arm.so.1]=.
+Output should be: =[Requesting program interpreter: /lib/ld-musl-arm.so.1]=.
 **** Other tests
 Test if the compiler uses the correct start files:
 #+BEGIN_SRC shell
@@ -1732,6 +1735,12 @@ Install:
 #+END_SRC
 *** Zlib
 Source: https://zlib.net/zlib-1.2.11.tar.xz \\
+Download and extract the sources:
+#+BEGIN_SRC shell
+  wget https://zlib.net/zlib-1.2.11.tar.xz 
+  tar -xf zlib-1.2.11.tar.xz 
+  cd zlib-1.2.11
+#+END_SRC
 Configure sources:
 #+BEGIN_SRC shell
   ./configure --prefix=/usr
@@ -1758,8 +1767,8 @@ Build and install:
 Source: https://ftp.gnu.org/gnu/readline/readline-8.0.tar.gz \\
 Download and extract the sources:
 #+BEGIN_SRC shell
-  wget https://ftp.gnu.org/gnu/readline/readline-8.0.tar.xz
-  tar -xf readline-8.0.tar.xz
+  wget https://ftp.gnu.org/gnu/readline/readline-8.0.tar.gz
+  tar -xf readline-8.0.tar.gz
   cd readline-8.0
 #+END_SRC
 Avoid a rare possibility of a linking bug in ldconfig:
@@ -1849,7 +1858,7 @@ Configure sources:
       --prefix=/usr        \
       --disable-static     \
       --enable-thread-safe \
-      --docdir=/usr/share/doc/mpfr-4.1.0 
+      --docdir=/usr/share/doc/mpfr-4.1.0
 #+END_SRC
 Build and install:
 #+BEGIN_SRC shell
@@ -1867,14 +1876,14 @@ Build and install:
   make && make install
 #+END_SRC
 *** Shadow
-Source: https://github.com/shadow-maint/shadow/releases/download/4.8.1/shadow-4.8.1.tar.xz
+Source: https://github.com/shadow-maint/shadow/releases/download/4.8.1/shadow-4.8.1.tar.xz \\
 Download and extract the sources:
 #+BEGIN_SRC shell
   wget https://github.com/shadow-maint/shadow/releases/download/4.8.1/shadow-4.8.1.tar.xz
   tar -xf shadow-4.8.1.tar.xz
   cd shadow-4.8.1
 #+END_SRC
-Disable griups, since toybox provides one:
+Disable groups, since toybox provides one:
 #+BEGIN_SRC shell
   sed -i 's/groups$(EXEEXT) //' src/Makefile.in
   find man -name Makefile.in -exec sed -i 's/groups\.1 / /'   {} \;
@@ -1906,4 +1915,103 @@ Download and extract dependencies:
   cd gcc-10.2.0
   tar -xf ../isl-0.22.tar.xz
   mv -v isl-0.22 isl
+#+END_SRC
+**** Setup TRUPLE
+***** x86_64
+#+BEGIN_SRC shell
+  export TRUPLE="x86_64-linux-musl"
+#+END_SRC
+***** i686
+#+BEGIN_SRC shell
+  export TRUPLE="i686-linux-musl"
+#+END_SRC
+***** ARM
+****** armv6
+#+BEGIN_SRC shell
+  export TRUPLE="armv7l-linux-musleabihf"
+#+END_SRC
+****** armv7
+#+BEGIN_SRC shell
+  export TRUPLE="armv6l-linux-musleabihf"
+#+END_SRC
+**** Continue building
+Use =lib= instead of =lib64=, (for x86_64 only):
+#+BEGIN_SRC shell
+  sed -e '/m64=/s/lib64/lib/' -i.orig gcc/config/i386/t-linux64
+#+END_SRC
+Set up an optimization level:
+#+BEGIN_SRC shell
+  sed -i "/ac_cpp=/s/\$CPPFLAGS/\$CPPFLAGS -O2/" {gcc,libiberty}/configure
+#+END_SRC
+Configure sources:
+#+BEGIN_SRC shell
+  SED=sed  libat_cv_have_ifunc=no  \
+     ../configure                  \
+     --prefix=/usr                 \
+     --build="${TRUPLE}"           \
+     --with-system-zlib            \
+     --with-isl                    \
+     --with-linker-hash-style=gnu  \
+     --enable-languages=c,c++      \
+     --enable-threads=posix        \
+     --enable-clocale=generic      \
+     --enable-languages=c,c++      \
+     --enable-tls                  \
+     --enable-libstdcxx-time       \
+     --enable-fully-dynamic-string \
+     --enable-default-pie          \
+     --enable-default-ssp          \
+     --enable-vtable-verify        \
+     --enable-linker-build-id      \
+     --enable-fast-character       \
+     --disable-libstdcxx-pch       \
+     --disable-nls                 \
+     --disable-multilib            \
+     --disable-bootstrap           \
+     --disable-symvers             \
+     --disable-libsanitizer        \
+     --disable-target-libiberty    \
+     --disable-libunwind-exceptions 
+#+END_SRC
+Create the build directory:
+#+BEGIN_SRC shell
+  mkdir -v build && cd build
+#+END_SRC
+Build and install:
+#+BEGIN_SRC shell
+  make && make install
+
+  ln -sv ../usr/bin/cpp /lib
+  ln -sv gcc /usr/bin/cc
+#+END_SRC
+Enable LTO:
+#+BEGIN_SRC shell
+  install -v -dm755 /usr/lib/bfd-plugins
+  ln -sfv ../../libexec/gcc/$(gcc -dumpmachine)/9.1.0/liblto_plugin.so \
+          /usr/lib/bfd-plugins/
+  mkdir -pv /usr/share/gdb/auto-load/usr/lib
+  mv -v /usr/lib/*gdb.py /usr/share/gdb/auto-load/usr/lib
+#+END_SRC
+Create test file to test the compiler:
+#+BEGIN_SRC shell
+  echo 'int main(){}' > test.c
+#+END_SRC
+Compile and test the test file:
+#+BEGIN_SRC shell
+  cc test.c -v -Wl,--verbose &> dummy.log
+  readelf -l a.out | grep Requesting
+#+END_SRC
+***** x86_64
+Output should be: =[Requesting program interpreter: /lib/ld-musl-x86_64.so.1]=.
+***** i686
+Output should be: =[Requesting program interpreter: /lib/ld-musl-i386.so.1]=.
+***** arm
+Output should be: =[Requesting program interpreter: /lib/ld-musl-arm.so.1]=.
+**** Other tests
+*** Toybox
+Configure, build and install.
+#+BEGIN_SRC shell
+  make defconfig
+  make
+  PREFIX=/ make install
 #+END_SRC
