@@ -113,6 +113,9 @@
     - [[#bash-1][Bash]]
     - [[#libtool][Libtool]]
     - [[#gdbm][Gdbm]]
+    - [[#gperf][Gperf]]
+    - [[#expat][Expat]]
+    - [[#inetutils][Inetutils]]
     - [[#toybox-1][Toybox]]
 
 * Partitions
@@ -2324,6 +2327,70 @@ Configure sources:
       --prefix=/usr    \
       --disable-static \
       --enable-libgdbm-compat
+#+END_SRC
+Build and install:
+#+BEGIN_SRC shell
+  make && make install
+#+END_SRC
+*** Gperf
+Source: https://ftp.gnu.org/gnu/gperf/gperf-3.1.tar.gz \\
+Download and extract the sources:
+#+BEGIN_SRC shell
+  wget https://ftp.gnu.org/gnu/gperf/gperf-3.1.tar.gz
+  tar -xf gperf-3.1.tar.gz
+  cd gperf-3.1
+#+END_SRC
+Configure sources:
+#+BEGIN_SRC shell
+  ./configure       \
+      --prefix=/usr \
+      --docdir=/usr/share/doc/gperf-3.1
+#+END_SRC
+Build and install:
+#+BEGIN_SRC shell
+  make && make install
+#+END_SRC
+*** Expat
+Source: https://prdownloads.sourceforge.net/expat/expat-2.2.9.tar.bz2 \\
+Download and extract the sources:
+#+BEGIN_SRC shell
+  wget https://prdownloads.sourceforge.net/expat/expat-2.2.9.tar.bz2
+  tar -xf expat-2.2.9.tar.bz2
+  cd expat-2.2.9
+#+END_SRC
+Configure sources:
+#+BEGIN_SRC shell
+  sed -i 's|usr/bin/env |bin/|' run.sh.in
+
+  ./configure          \
+      --prefix=/usr    \
+      --disable-static \
+      --docdir=/usr/share/doc/expat-2.2.9
+#+END_SRC
+Build and install:
+#+BEGIN_SRC shell
+  make && make install
+#+END_SRC
+*** Inetutils
+Source: https://ftp.gnu.org/gnu/inetutils/inetutils-1.9.4.tar.xz \\
+Download and extract the sources:
+#+BEGIN_SRC shell
+  wget https://ftp.gnu.org/gnu/ineutils/ineutils-1.9.4.tar.gz
+  tar -xf ineutils-1.9.4.tar.gz
+  cd ineutils-1.9.4
+#+END_SRC
+Configure sources:
+#+BEGIN_SRC shell
+  ./configure              \
+      --prefix=/usr        \
+      --localstatedir=/var \
+      --disable-logger     \
+      --disable-whois      \
+      --disable-rcp        \
+      --disable-rexec      \
+      --disable-rlogin     \
+      --disable-rsh        \
+      --disable-servers
 #+END_SRC
 Build and install:
 #+BEGIN_SRC shell
