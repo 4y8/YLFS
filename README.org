@@ -91,7 +91,6 @@
     - [[#file-2][File]]
     - [[#readline][Readline]]
     - [[#m4-1][M4]]
-    - [[#bc][Bc]]
     - [[#binutils-1][Binutils]]
     - [[#gmp][GMP]]
     - [[#mpfr][MPFR]]
@@ -111,6 +110,9 @@
     - [[#iana-etc][Iana-etc]]
     - [[#bison-1][Bison]]
     - [[#flex][Flex]]
+    - [[#bash-1][Bash]]
+    - [[#libtool][Libtool]]
+    - [[#gdbm][Gdbm]]
     - [[#toybox-1][Toybox]]
 
 * Partitions
@@ -1238,8 +1240,8 @@ Download and extract the sources:
 Configure sources:
 #+BEGIN_SRC shell
   ./configure               \
-      --build=${YLFS_HOST}  \
-      --host=${YLFS_TARGET} \
+      --build=$"YLFS_HOST"  \
+      --host=$"YLFS_TARGET" \
       --prefix=/tools
 #+END_SRC
 Build and install:
@@ -1345,8 +1347,8 @@ Download and extract the sources:
 Configure sources:
 #+BEGIN_SRC shell
   ./configure               \
-      --build=${YLFS_HOST}  \
-      --host=${YLFS_TARGET} \
+      --build="$YLFS_HOST"  \
+      --host="$YLFS_TARGET" \
       --prefix=/tools
 #+END_SRC
 Build and install:
@@ -1813,7 +1815,6 @@ Build and install:
 #+BEGIN_SRC shell
   make && make install
 #+END_SRC
-*** TODO Bc
 *** Binutils
 Delete the old build directory:
 #+BEGIN_SRC shell
@@ -2107,7 +2108,6 @@ Configure sources:
       --with-internal-glib       \
       --disable-host-tool        \
       --docdir=/usr/share/doc/pkg-config-0.29.2
-
 #+END_SRC
 Build and install:
 #+BEGIN_SRC shell
@@ -2278,8 +2278,56 @@ Configure sources:
 Build and install:
 #+BEGIN_SRC shell
   make && make install
-
   ln -sv flex /usr/bin/lex
+#+END_SRC
+*** Bash
+Configure sources:
+#+BEGIN_SRC shell
+  ./configure                          \
+      --prefix=/usr                    \
+      --docdir=/usr/share/doc/bash-5.0 \
+      --without-bash-malloc            \
+      --with-installed-readline
+#+END_SRC
+Build and install:
+#+BEGIN_SRC shell
+  make && make install
+  mv -vf /usr/bin/bash /bin
+#+END_SRC
+*** Libtool
+Source: https://ftp.gnu.org/gnu/libtool/libtool-2.4.6.tar.xz \\
+Download and extract the sources:
+#+BEGIN_SRC shell
+  wget https://ftp.gnu.org/gnu/libtool/libtool-2.4.6.tar.xz
+  tar -xf libtool-2.4.6.tar.xz
+  cd libtool-2.4.6
+#+END_SRC
+Configure sources:
+#+BEGIN_SRC shell
+  ./configure --prefix=/usr
+#+END_SRC
+Build and install:
+#+BEGIN_SRC shell
+  make && make install
+#+END_SRC
+*** Gdbm
+Source: https://ftp.gnu.org/gnu/gdbm/gdbm-1.18.1.tar.xz \\
+Download and extract the sources:
+#+BEGIN_SRC shell
+  wget https://ftp.gnu.org/gnu/gdbm/gdbm-1.18.1.tar.xz
+  tar -xf gdbm-1.18.1.tar.xz
+  cd gdbm-1.18.1
+#+END_SRC
+Configure sources:
+#+BEGIN_SRC shell
+  ./configure          \
+      --prefix=/usr    \
+      --disable-static \
+      --enable-libgdbm-compat
+#+END_SRC
+Build and install:
+#+BEGIN_SRC shell
+  make && make install
 #+END_SRC
 *** Toybox
 Configure, build and install.
