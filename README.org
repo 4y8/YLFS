@@ -121,6 +121,9 @@
     - [[#automake][Automake]]
     - [[#musl-fts][Musl FTS]]
     - [[#musl-obstack][Musl Obstack]]
+    - [[#xz-1][Xz]]
+    - [[#kmod][Kmod]]
+    - [[#gettext][Gettext]]
 
 * Partitions
 ** BIOS
@@ -159,8 +162,8 @@ Prepare the directories for the sources and patches:
 #+END_SRC
 Link directories:
 #+BEGIN_SRC shell
-  ln -sv ${YLFS}/cross-tools /
-  ln -sv ${YLFS}/tools /
+  ln -sv "${YLFS}/cross-tools" /
+  ln -sv "${YLFS}/tools" /
 #+END_SRC
 Create a new user for the installation of tools:
 #+BEGIN_SRC shell
@@ -170,10 +173,10 @@ Create a new user for the installation of tools:
 #+END_SRC
 Adapt the permissions of the build directories:
 #+BEGIN_SRC shell
-  chown -v  ylfs ${YLFS}/cross-tools
-  chown -vR ylfs ${YLFS}/sources
-  chmod -v  a+wt ${YLFS}/sources
-  chown -v  ylfs ${YLFS}/tools
+  chown -v  ylfs "{YLFS}/cross-tools"
+  chown -vR ylfs "${YLFS}/sources"
+  chmod -v  a+wt "{YLFS}/sources"
+  chown -v  ylfs "${YLFS}/tools"
 #+END_SRC
 Login as the =ylfs= user:
 #+BEGIN_SRC shell
@@ -608,11 +611,11 @@ Configure sources:
   CFLAGS='-g0 -O0'   \
   CXXFLAGS='-g0 -O0' \
   ../configure                                       \
-      --target=${YLFS_TARGET}                        \
-      --build=${YLFS_HOST}                           \
-      --host=${YLFS_TARGET}                          \
+      --target="$YLFS_TARGET"                        \
+      --build="$YLFS_HOST"                           \
+      --host="$YLFS_TARGET"                          \
       --prefix=/tools                                \
-      --with-sysroot=${YLFS}                         \
+      --with-sysroot="$YLFS"                         \
       --with-newlib                                  \
       --without-headers                              \
       --with-local-prefix=/tools                     \
@@ -640,11 +643,11 @@ Build and install:
 *** Kernel Headers
 Clean sources:
 #+BEGIN_SRC shell
-  ARCH=${YLFS_ARCH} make mrproper
+  ARCH="$YLFS_ARCH" make mrproper
 #+END_SRC
 Build headers:
 #+BEGIN_SRC shell
-  ARCH=${YLFS_ARCH} make headers
+  ARCH="$YLFS_ARCH" make headers
 #+END_SRC
 Clean:
 #+BEGIN_SRC shell
@@ -725,15 +728,15 @@ Create the build directory:
 Configure sources:
 #+BEGIN_SRC shell
   ../libstdc++-v3/configure           \
-      --target=${YLFS_TARGET}         \
-      --build=${YLFS_HOST}            \
-      --host=${YLFS_TARGET}           \
+      --target="$YLFS_TARGET"         \
+      --build="$YLFS_HOST"            \
+      --host="$YLFS_TARGET"           \
       --prefix=/tools                 \
       --disable-multilib              \
       --disable-nls                   \
       --disable-libstdcxx-threads     \
       --disable-libstdcxx-pch         \
-      --with-gxx-include-dir=/tools/${YLFS_TARGET}/include/c++/10.2.0
+      --with-gxx-include-dir="/tools/${YLFS_TARGET}/include/c++/10.2.0"
 #+END_SRC
 Build and install:
 #+BEGIN_SRC shell
@@ -876,10 +879,10 @@ Download and extract the sources:
 #+END_SRC
 Configure sources:
 #+BEGIN_SRC shell
-  ac_cv_func_strtod=yes \
-  tcl_cv_strtod_buggy=1 \
-  ./configure --build=${YLFS_HOST}  \
-              --host=${YLFS_TARGET} \
+  ac_cv_func_strtod=yes             \
+  tcl_cv_strtod_buggy=1             \
+  ./configure --build="$YLFS_HOST"  \
+              --host="$YLFS_TARGET" \
               --prefix=/tools
 #+END_SRC
 Build and install:
@@ -902,10 +905,10 @@ Download and extract the sources:
 #+END_SRC
 Update files to support Musl Libc for configure:
 #+BEGIN_SRC shell
-cp -v ../../files/config.guess-musl tclconfig/config.guess
-cp -v ../../files/config.sub-musl tclconfig/config.sub
-cp -v configure{,.orig}
-sed 's:/usr/local/bin:/bin:' configure.orig > configure
+  cp -v ../../files/config.guess-musl tclconfig/config.guess
+  cp -v ../../files/config.sub-musl tclconfig/config.sub
+  cp -v configure{,.orig}
+  sed 's:/usr/local/bin:/bin:' configure.orig > configure
 #+END_SRC
 Configure sources:
 #+BEGIN_SRC shell
@@ -932,8 +935,8 @@ Download and extract the sources:
 Configure sources:
 #+BEGIN_SRC shell
   ./configure               \
-      --build=${YLFS_HOST}  \
-      --host=${YLFS_TARGET} \
+      --build="$YLFS_HOST"  \
+      --host="$YLFS_TARGET" \
       --prefix=/tools
 #+END_SRC
 Build and install:
@@ -951,8 +954,8 @@ Download and extract the sources:
 Configure sources:
 #+BEGIN_SRC shell
   ./configure               \
-      --build=${YLFS_HOST}  \
-      --host=${YLFS_TARGET} \
+      --build="$YLFS_HOST"  \
+      --host="$YLFS_TARGET" \
       --prefix=/tools
 #+END_SRC
 Build and install:
@@ -974,8 +977,8 @@ Make sure =gawk= is found:
 Configure sources:
 #+BEGIN_SRC shell
   ./configure               \
-      --build=${YLFS_HOST}  \
-      --host=${YLFS_TARGET} \
+      --build="$YLFS_HOST"  \
+      --host="$YLFS_TARGET" \
       --prefix=/tools       \
       --with-shared         \
       --without-debug       \
@@ -1019,8 +1022,8 @@ Configure sources:
     ./configure               \
         --prefix=/tools       \
         --without-bash-malloc \
-        --build=${YLFS_HOST}  \
-        --host=${YLFS_TARGET} \
+        --build="$YLFS_HOST"  \
+        --host="$YLFS_TARGET" \
         --cache-file=config.cache
 #+END_SRC
 Build and install:
@@ -2496,4 +2499,53 @@ Patch and configure:
 Build and install:
 #+BEGIN_SRC shell
   make && make install
+#+END_SRC
+*** Xz
+Configure sources:
+#+BEGIN_SRC shell
+  ./configure          \
+      --prefix=/usr    \
+      --disable-static \
+      --docdir=/usr/share/doc/xz-5.2.5
+#+END_SRC
+Build and install:
+#+BEGIN_SRC shell
+  make && make install
+  mv -v   /usr/bin/{lzma,unlzma,lzcat,xz,unxz,xzcat} /bin
+  mv -v /usr/lib/liblzma.so.* /lib
+  ln -svf ../../lib/$(readlink /usr/lib/liblzma.so) /usr/lib/liblzma.so
+#+END_SRC
+*** Kmod
+Source: https://www.kernel.org/pub/linux/utils/kernel/kmod/kmod-27.tar.xz \\
+Download and extract the sources:
+#+BEGIN_SRC shell
+  wget https://www.kernel.org/pub/linux/utils/kernel/kmod/kmod-27.tar.xz
+  tar -xf kmod-27.tar.xz
+  cd kmod-27
+#+END_SRC
+Configure sources:
+#+BEGIN_SRC shell
+  ./configure                \
+      --prefix=/usr          \
+      --bindir=/bin          \
+      --sysconfdir=/etc      \
+      --with-rootlibdir=/lib \
+      --with-xz              \
+      --with-zlib
+#+END_SRC
+Build and install
+#+BEGIN_SRC shell
+  make && make install
+
+  for target in depmod insmod lsmod modinfo modprobe rmmod; do
+    ln -sfv ../bin/kmod /sbin/$target
+  done
+
+  ln -sfv kmod /bin/lsmod
+#+END_SRC
+*** Gettext
+Build and install:
+#+BEGIN_SRC shell
+  make LIBINTL=MUSL
+  make LIBINTL=MUSL prefix=/usr install
 #+END_SRC
