@@ -117,8 +117,10 @@
     - [[#inetutils][Inetutils]]
     - [[#perl-1][Perl]]
     - [[#xmlparser][XML::Parser]]
-    - [[#busybox][Busybox]]
-    - [[#toybox][Toybox]]
+    - [[#autoconf][Autoconf]]
+    - [[#automake][Automake]]
+    - [[#musl-fts][Musl FTS]]
+    - [[#musl-obstack][Musl Obstack]]
 
 * Partitions
 ** BIOS
@@ -2413,11 +2415,85 @@ Build and install:
 #+END_SRC
 *** XML::Parser
 Source: https://cpan.metacpan.org/authors/id/T/TO/TODDR/XML-Parser-2.46.tar.gz \\
-*** Busybox
-*** Toybox
-Configure, build and install.
+Download and extract the sources:
 #+BEGIN_SRC shell
-  make defconfig
-  make
-  PREFIX=/ make install
+  wget https://cpan.metacpan.org/authors/id/T/TO/TODDR/XML-Parser-2.46.tar.gz
+  tar -xf XML-Parser-2.46.tar.gz
+  cd XML-Parser-2.46
+#+END_SRC
+Build and install:
+#+BEGIN_SRC shell
+  perl Makefile.PL && make && make install
+#+END_SRC
+*** Autoconf
+Source: https://ftp.gnu.org/gnu/autoconf/autoconf-2.69.tar.xz \\
+Download and extract the sources:
+#+BEGIN_SRC shell
+  wget https://ftp.gnu.org/gnu/autoconf/autoconf-2.69.tar.xz
+  tar -xf autoconf-2.69.tar.xz
+  cd autoconf-2.69
+#+END_SRC
+Configure sources:
+#+BEGIN_SRC shell
+  ./configure --prefix=/usr
+#+END_SRC
+Build and install:
+#+BEGIN_SRC shell
+  make && make install
+#+END_SRC
+*** Automake
+Source: http://ftp.gnu.org/gnu/automake/automake-1.16.2.tar.xz \\
+Download and extract the sources:
+#+BEGIN_SRC shell
+  wget https://ftp.gnu.org/gnu/automake/automake-1.16.2.tar.xz
+  tar -xf automake-1.16.2.tar.xz
+  cd automake-1.16.2
+#+END_SRC
+Configure sources:
+#+BEGIN_SRC shell
+  ./configure       \
+      --prefix=/usr \
+      --docdir=/usr/share/doc/automake-1.16.2
+#+END_SRC
+Build and install:
+#+BEGIN_SRC shell
+  make && make install
+#+END_SRC
+*** Musl FTS
+Source: https://github.com/pullmoll/musl-fts/archive/v1.2.7.tar.gz \\
+Download and extract the sources:
+#+BEGIN_SRC shell
+  wget https://github.com/pullmoll/musl-fts/archive/v1.2.7.tar.gz
+  tar -xf v1.2.7.tar.gz
+  cd v1.2.7
+#+END_SRC
+Patch and configure:
+#+BEGIN_SRC shell
+  sed -i "/pkgconfig_DATA/i pkgconfigdir=/usr/lib/pkgconfig" Makefile.am
+  ./bootstrap.sh
+
+  ./configure --prefix=/usr
+#+END_SRC
+Build and install:
+#+BEGIN_SRC shell
+  make && make install
+#+END_SRC
+*** Musl Obstack
+Source: https://github.com/pullmoll/musl-obstack/archive/v1.1.tar.gz \\
+Download and extract the sources:
+#+BEGIN_SRC shell
+  wget https://github.com/pullmoll/musl-obstack/archive/v1.1.tar.gz
+  tar -xf v1.1.tar.gz
+  cd v1.1
+#+END_SRC
+Patch and configure:
+#+BEGIN_SRC shell
+  sed -i "/pkgconfig_DATA/i pkgconfigdir=/usr/lib/pkgconfig" Makefile.am
+  ./bootstrap.sh
+
+  ./configure --prefix=/usr
+#+END_SRC
+Build and install:
+#+BEGIN_SRC shell
+  make && make install
 #+END_SRC
