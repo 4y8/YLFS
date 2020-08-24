@@ -124,6 +124,16 @@
     - [[#xz-1][Xz]]
     - [[#kmod][Kmod]]
     - [[#gettext][Gettext]]
+    - [[#libressl][LibreSSL]]
+    - [[#python][Python]]
+    - [[#ninja-samurai][Ninja (Samurai)]]
+    - [[#meson][Meson]]
+    - [[#procps][Procps]]
+    - [[#busybox][Busybox]]
+    - [[#make-1][Make]]
+    - [[#grub][Grub]]
+    - [[#gzip-1][Gzip]]
+    - [[#s6][S6]]
 
 * Partitions
 ** BIOS
@@ -1124,8 +1134,8 @@ Download and extract the sources:
 Configure sources:
 #+BEGIN_SRC shell
   ./configure               \
-      --build=${YLFS_HOST}  \
-      --host=${YLFS_TARGET} \
+      --build="$YLFS_HOST"  \
+      --host="$YLFS_TARGET" \
       --prefix=/tools
 #+END_SRC
 Build and install:
@@ -1136,8 +1146,8 @@ Build and install:
 Configure sources:
 #+BEGIN_SRC shell
   ./configure               \
-      --build=${YLFS_HOST}  \
-      --host=${YLFS_TARGET} \
+      --build="$YLFS_HOST"  \
+      --host="$YLFS_TARGET" \
       --prefix=/tools
 #+END_SRC
 Build and install:
@@ -1160,8 +1170,8 @@ Patch sources:
 Configure sources:
 #+BEGIN_SRC shell
   ./configure               \
-      --build=${YLFS_HOST}  \
-      --host=${YLFS_TARGET} \
+      --build="$YLFS_HOST"  \
+      --host="$YLFS_TARGET" \
       --prefix=/tools
 #+END_SRC
 Build and install:
@@ -1180,8 +1190,8 @@ Download and extract the sources:
 Configure sources:
 #+BEGIN_SRC shell
   ./configure               \
-      --build=${YLFS_HOST}  \
-      --host=${YLFS_TARGET} \
+      --build="$YLFS_HOST"  \
+      --host="$YLFS_TARGET" \
       --prefix=/tools
 #+END_SRC
 Build and install:
@@ -1358,8 +1368,8 @@ Download and extract the sources:
 Configure sources:
 #+BEGIN_SRC shell
   ./configure               \
-      --build=${YLFS_HOST}  \
-      --host=${YLFS_TARGET} \
+      --build="$YLFS_HOST"  \
+      --host="$YLFS_TARGET" \
       --prefix=/tools
 #+END_SRC
 Build and install:
@@ -2549,3 +2559,124 @@ Build and install:
   make LIBINTL=MUSL
   make LIBINTL=MUSL prefix=/usr install
 #+END_SRC
+*** LibreSSL
+Source: https://ftp.openbsd.org/pub/OpenBSD/LibreSSL/libressl-3.2.0.tar.gz \\
+Download and extract the sources:
+#+BEGIN_SRC shell
+  wget https://ftp.openbsd.org/pub/OpenBSD/LibreSSL/libressl-3.2.0.tar.gz
+  tar -xf libressl-3.2.0.tar.gz
+  cd libressl-3.2.0
+#+END_SRC
+Configure sources:
+#+BEGIN_SRC shell
+  ./configure                 \
+      --prefix=/usr           \
+      --sysconfdir=/etc       \
+      --mandir=/usr/share/man \
+      --localstatedir=/var
+#+END_SRC
+Build and install:
+#+BEGIN_SRC shell
+  make && make install
+  install -Dm 755 /files/ssl.sh "/usr/etc/ssl"
+#+END_SRC
+*** Python
+Source: https://www.python.org/ftp/python/3.8.5/Python-3.8.5.tar.xz \\
+Download and extract the sources:
+#+BEGIN_SRC shell
+  wget https://www.python.org/ftp/python/3.8.5/Python-3.8.5.tar.xz
+  tar -xf Python-3.8.5.tar.xz
+  cd Python-3.8.5
+#+END_SRC
+Patch sources:
+#+BEGIN_SRC shell
+  cat >> Modules/Setup <<EOF
+  ,*disabled*
+  _uuid nis ossaudiodev
+  EOF
+
+  rm -r Modules/expat
+  rm -r Modules/_ctypes/{darwin,libffi}*
+
+  for file in /patches/python/*; do
+      patch -p1 < "$file"
+  done
+#+END_SRC
+Set =CFLAGS= to improve performance:
+#+BEGIN_SRC shell
+  export CFLAGS="$CFLAGS -fno-semantic-interposition"
+  export LDFLAGS="$LDFLAGS -fno-semantic-interposition"
+#+END_SRC
+Configure sources:
+#+BEGIN_SRC shell
+  ./configure               \
+      --prefix=/usr         \
+      --enable-shared       \
+      --with-system-expat   \
+      --with-system-ffi     \
+      --with-ensurepip=yes  \
+      --enable-ipv6         \
+      --without-doc-strings \
+      --with-threads
+#+END_SRC
+Build and install:
+#+BEGIN_SRC shell
+    make && make install
+
+    ln -s python3 "/usr/bin/python"
+    ln -s pip3    "/usr/bin/pip"
+#+END_SRC
+Make static library writable:
+#+BEGIN_SRC shell
+  chmod u+w "$1/usr/lib/libpython"*
+#+END_SRC
+Remove rarely used coponents:
+#+BEGIN_SRC shell
+  cd "/usr/lib/python"*
+  rm -rf test ./*/test ./*/tests
+  rm -rf pydoc* idlelib turtle* config-* ensurepip
+
+  cd "/usr/bin"
+  rm -f pydoc* idle*
+#+END_SRC
+Change permissions to allow stripping later
+#+BEGIN_SRC shell
+  chmod -v 755 /usr/lib/libpython3.8m.so
+  chmod -v 755 /usr/lib/libpython3.so
+#+END_SRC
+*** Ninja (Samurai)
+Source: https://github.com/michaelforney/samurai/releases/download/1.1/samurai-1.1.tar.gz \\
+Download and extract the sources:
+#+BEGIN_SRC shell
+  wget https://github.com/michaelforney/samurai/releases/download/1.1/samurai-1.1.tar.gz
+  tar -xf samurai-1.1.tar.gz
+  cd samurai-1.1
+#+END_SRC
+Build and install:
+#+BEGIN_SRC shell
+  make PREFIX=/usr
+  make PREFIX=/usr install
+  ln -s samu "$1/usr/bin/ninja"
+#+END_SRC
+*** Meson
+Source: https://github.com/mesonbuild/meson/releases/download/0.55.1/meson-0.55.1.tar.gz \\
+Download and extract the sources:
+#+BEGIN_SRC shell
+  wget https://github.com/mesonbuild/meson/releases/download/0.55.1/meson-0.55.1.tar.gz
+  tar -xf meson-0.55.1.tar.gz
+  cd meson-0.55.1
+#+END_SRC
+Build and install:
+#+BEGIN_SRC shell
+  python3 setup.py build
+
+  python3 setup.py install --root=dest
+  cp -rv dest/* /
+#+END_SRC
+*** Procps
+Source: https://sourceforge.net/projects/procps-ng/files/Production/procps-ng-3.3.16.tar.xz \\
+*** Busybox
+*** Make
+*** Grub
+*** Gzip
+*** S6
