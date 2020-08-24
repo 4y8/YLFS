@@ -53,7 +53,6 @@
     - [[#bash][Bash]]
     - [[#bison][Bison]]
     - [[#bzip2][Bzip2]]
-    - [[#toybox][Toybox]]
     - [[#coreutils][Coreutils]]
     - [[#diffutils][Diffutils]]
     - [[#file-1][File]]
@@ -117,7 +116,9 @@
     - [[#expat][Expat]]
     - [[#inetutils][Inetutils]]
     - [[#perl-1][Perl]]
-    - [[#toybox-1][Toybox]]
+    - [[#xmlparser][XML::Parser]]
+    - [[#busybox][Busybox]]
+    - [[#toybox][Toybox]]
 
 * Partitions
 ** BIOS
@@ -1067,24 +1068,6 @@ Build and install:
 #+BEGIN_SRC shell
   make CC="${CC}" AR="${AR}" RANLIB="${RANLIB}"
   make PREFIX=/tools install
-#+END_SRC
-*** TODO Toybox
-Source: https://landley.net/toybox/downloads/toybox-0.8.3.tar.gz \\
-Download and extract the sources:
-#+BEGIN_SRC shell
-  wget https://landley.net/toybox/downloads/toybox-0.8.3.tar.gz
-  tar -xf toybox-0.8.3.tar.gz
-  cd toybox-0.8.3
-#+END_SRC
-Configure, build and install.
-#+BEGIN_SRC shell
-  make defconfig
-  make
-  PREFIX=/tools make install
-#+END_SRC
-Remove toybox's =grep= and =sed= since GNU ones will be installed:
-#+BEGIN_SRC shell
-  rm /tools/bin/{grep,sed}
 #+END_SRC
 *** Coreutils
 Source: https://ftp.gnu.org/gnu/coreutils/coreutils-8.32.tar.xz \\
@@ -2402,6 +2385,35 @@ Build and install:
   make && make install
 #+END_SRC
 *** Perl
+Export config variables:
+#+BEGIN_SRC shell
+  echo "127.0.0.1 localhost $(hostname)" > /etc/hosts
+  export BUILD_ZLIB=False
+  export BUILD_BZIP2=0
+  export CF_OLD="$CFLAGS"
+  export CFLAGS+=" -DNO_POSIX_2008_LOCALE"
+  export CFLAGS+=" -D_GNU_SOURCE"
+#+END_SRC
+Configure sources:
+#+BEGIN_SRC shell
+  sh Configure -des                \
+     -Dprefix=/usr                 \
+     -Dvendorprefix=/usr           \
+     -Dman1dir=/usr/share/man/man1 \
+     -Dman3dir=/usr/share/man/man3 \
+     -Dpager="/usr/bin/less -isR"  \
+     -Duseshrplib                  \
+     -Dusethreads
+#+END_SRC
+Build and install:
+#+BEGIN_SRC shell
+  make && make install
+  export CFLAGS="$CF_OLD"
+  unset BUILD_ZLIB BUILD_BZIP2 CF_OLD
+#+END_SRC
+*** XML::Parser
+Source: https://cpan.metacpan.org/authors/id/T/TO/TODDR/XML-Parser-2.46.tar.gz \\
+*** Busybox
 *** Toybox
 Configure, build and install.
 #+BEGIN_SRC shell
