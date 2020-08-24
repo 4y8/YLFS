@@ -146,6 +146,18 @@
     - [[#execline][Execline]]
     - [[#s6][S6]]
     - [[#s6-linux-utils][S6-linux-utils]]
+    - [[#s6-portable-utils][S6-portable-utils]]
+    - [[#s6-rc][S6-rc]]
+    - [[#s6-linux-init][S6-linux-init]]
+    - [[#dhcp][DHCP]]
+  - [[#clean-up][Clean up]]
+    - [[#stripping][Stripping]]
+    - [[#other-clean-up][Other clean up]]
+  - [[#final-configuration][Final configuration]]
+    - [[#s6-bootscripts][S6-bootscripts]]
+    - [[#networking][Networking]]
+      - [[#wi-fi][Wi-Fi]]
+      - [[#ethernet][Ethernet]]
 
 * Partitions
 ** BIOS
@@ -2977,8 +2989,8 @@ Configure sources:
 #+BEGIN_SRC shell
   ./configure                     \
       --prefix=/usr               \
-      --with-lib=/usr/lib/skalibs \
       --bindir=/bin               \
+      --with-lib=/usr/lib/skalibs \
       --enabled-shared
 #+END_SRC
 Build and install:
@@ -2999,7 +3011,6 @@ Configure sources:
       --prefix=/usr                \
       --bindir=/bin                \
       --with-lib=/usr/lib/skalibs  \
-      --bindir=/bin                \
       --with-lib=/usr/lib/libexec  \
       --with-lib=/usr/lib/execline \
       --with-dynlib=/usr/lib       \
@@ -3025,3 +3036,184 @@ Build and install:
 #+BEGIN_SRC shell
   make && make install
 #+END_SRC
+*** S6-portable-utils
+Source: https://www.skarnet.org/software/s6-portable-utils/s6-portable-utils-2.2.2.4.tar.gz \\
+Download and extract the sources:
+#+BEGIN_SRC shell
+  wget https://www.skarnet.org/software/s6-portable-utils/s6-portable-utils-2.2.2.4.tar.gz
+  tar -xf s6-portable-utils-2.2.2.4.tar.gz
+  cd s6-portable-utils-2.2.2.4
+#+END_SRC
+Configure sources:
+#+BEGIN_SRC shell
+  ./configure                      \
+      --prefix=/usr                \
+      --with-lib=/usr/lib/skalibs  \
+      --with-lib=/usr/lib/libexec  \
+      --with-lib=/usr/lib/execline \
+      --with-dynlib=/usr/lib       \
+      --enabled-shared
+#+END_SRC
+Build and install:
+#+BEGIN_SRC shell
+  make && make install
+#+END_SRC
+*** S6-rc
+Source: https://www.skarnet.org/software/s6-rc/s6-rc-0.5.1.4.tar.gz \\
+Download and extract the sources:
+#+BEGIN_SRC shell
+  wget https://www.skarnet.org/software/s6-rc/s6-rc-0.5.1.4.tar.gz
+  tar -xf s6-rc-0.5.1.4.tar.gz
+  cd s6-rc-0.5.1.4
+#+END_SRC
+Configure sources:
+#+BEGIN_SRC shell
+  ./configure                      \
+      --prefix=/usr                \
+      --with-lib=/usr/lib/skalibs  \
+      --with-lib=/usr/lib/libexec  \
+      --with-lib=/usr/lib/execline \
+      --with-lib=/usr/lib/s6       \
+      --with-dynlib=/usr/lib       \
+      --enabled-shared
+#+END_SRC
+Build and install:
+#+BEGIN_SRC shell
+  make && make install
+#+END_SRC
+*** S6-linux-init
+Source: https://www.skarnet.org/software/s6-linux-init/s6-linux-init-1.0.4.2.tar.gz \\
+Download and extract the sources:
+#+BEGIN_SRC shell
+  wget https://www.skarnet.org/software/s6-linux-init/s6-linux-init-1.0.4.2.tar.gz
+  tar -xf s6-linux-init-1.0.4.2.tar.gz
+  cd s6-linux-init-1.0.4.2
+#+END_SRC
+Configure sources:
+#+BEGIN_SRC shell
+  ./configure                      \
+      --prefix=/usr                \
+      --with-lib=/usr/lib/skalibs  \
+      --with-lib=/usr/lib/libexec  \
+      --with-lib=/usr/lib/execline \
+      --with-lib=/usr/lib/s6       \
+      --with-dynlib=/usr/lib       \
+      --enabled-shared
+#+END_SRC
+Build and install:
+#+BEGIN_SRC shell
+  make && make install
+#+END_SRC
+*** TODO DHCP
+Source: ftp://ftp.isc.org/isc/dhcp/4.4.2/dhcp-4.4.2.tar.gz \\
+Download and extract the sources:
+#+BEGIN_SRC shell
+  wget ftp://ftp.isc.org/isc/dhcp/4.4.2/dhcp-4.4.2.tar.gz
+  tar -xf dhcp-4.4.2.tar.gz
+  cd dhcp-4.4.2
+#+END_SRC
+** Clean up
+*** Stripping
+Strip the final system:
+#+BEGIN_SRC shell
+  exec /tools/bin/bash
+  /tools/bin/find /usr/lib -type f -name \*.a \
+     -exec /tools/bin/strip --strip-debug {} ';'
+
+  /tools/bin/find /lib /usr/lib -type f \( -name \*.so* -a ! -name \*dbg \) \
+     -exec /tools/bin/strip --strip-unneeded {} ';'
+
+  /tools/bin/find /{bin,sbin} /usr/{bin,sbin,libexec} -type f \
+      -exec /tools/bin/strip --strip-all {} ';'
+#+END_SRC
+*** Other clean up
+Exit chroot:
+#+BEGIN_SRC shell
+  rm -rvf /tmp/*
+  exit
+#+END_SRC
+Re-enter chroot:
+#+BEGIN_SRC shell
+export YLFS=/mnt/ylfs
+
+chroot "$YLFS" /usr/bin/env -i         \
+    HOME=/root TERM="$TERM"            \
+    PS1='(ylfs chroot) \u:\w\$ '       \
+    PATH=/bin:/usr/bin:/sbin:/usr/sbin \
+    /bin/bash --login
+#+END_SRC
+Remove unecessary files:
+#+BEGIN_SRC shell
+  rm -fv /usr/lib/lib{bfd,opcodes}.a
+  rm -fv /usr/lib/libbz2.a
+  rm -fv /usr/lib/lib{com_err,e2p,ext2fs,ss}.a
+  rm -fv /usr/lib/libltdl.a
+  rm -fv /usr/lib/libfl.a
+  rm -fv /usr/lib/libz.a
+  find /usr/lib /usr/libexec -name \*.la -delete
+#+END_SRC
+Remove build times directory:
+#+BEGIN_SRC shell
+  rm -rf /{cross-tools,tools}
+#+END_SRC
+** Final configuration
+*** S6-bootscripts
+Source: https://github.com/dslm4515/MLFS-S6-Bootscripts/releases/download/3.02/MLFS-S6-Bootscripts-3.02.tar.xz \\
+Download and extract the sources:
+#+BEGIN_SRC shell
+  wget https://github.com/dslm4515/MLFS-S6-Bootscripts/releases/download/3.02/MLFS-S6-Bootscripts-3.02.tar.xz
+  tar -xf MLFS-S6-Bootscripts-3.02.tar.xz
+  cd MLFS-S6-Bootscripts-3.02
+#+END_SRC
+Install bootscripts:
+#+BEGIN_SRC shell
+  cp -rav s6 /etc/
+#+END_SRC
+Compile =basic= database:
+#+BEGIN_SRC shell
+  s6-rc-compile /etc/s6/db/basic /etc/s6/db-src/basic
+#+END_SRC
+Create a link to the database to boot:
+#+BEGIN_SRC shell
+  ln -sv /etc/s6/db/basic /etc/s6/db/current
+#+END_SRC
+Create link to the init script for the kernel:
+#+BEGIN_SRC shell
+  ln -sv /etc/s6/init /sbin/init
+#+END_SRC
+Create links for poweroff and reboot:
+#+BEGIN_SRC shell
+  ln -sv /usr/bin/s6-reboot /sbin/reboot
+  ln -sv /usr/bin/s6-poweroff /sbin/poweroff
+#+END_SRC
+Install networking at boot:
+#+BEGIN_SRC shell
+  mkdir -v /lib/services
+  cp -vr net-services/* /lib/services/
+  cp -vr lsb /lib/
+#+END_SRC
+Install web interface helpers:
+#+BEGIN_SRC shell
+  cp -v if* /sbin/
+#+END_SRC
+Create the log user:
+#+BEGIN_SRC shell
+  groupadd -g 19 log &&
+  useradd -c "S6 Log User" -d /var/log/aux-serv \
+          -u 19 -g log -s /bin/false log
+#+END_SRC
+Create a directory for services:
+#+BEGIN_SRC shell
+  install -m0755 -o 19 -g 19 -d /var/log/aux-serv
+#+END_SRC
+Create a boot system with an initramfs:
+#+BEGIN_SRC shell
+  cp -v mkinitrd/mkinitramfs /sbin
+  chmod -v 0755 /sbin/mkinitramfs
+
+  mkdir -p /usr/share/mkinitramfs
+  cp -v  mkinitrd/init.in /usr/share/mkinitramfs/
+#+END_SRC
+*** Networking
+**** TODO Wi-Fi
+**** Ethernet
