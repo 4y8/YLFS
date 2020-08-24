@@ -130,9 +130,13 @@
     - [[#meson][Meson]]
     - [[#procps][Procps]]
     - [[#busybox][Busybox]]
-    - [[#make-1][Make]]
+    - [[#check][Check]]
     - [[#grub][Grub]]
+      - [[#bios-1][BIOS]]
+      - [[#uefi-1][UEFI]]
+      - [[#build-2][Build]]
     - [[#gzip-1][Gzip]]
+    - [[#make-1][Make]]
     - [[#s6][S6]]
 
 * Partitions
@@ -2378,9 +2382,9 @@ Build and install:
 Source: https://ftp.gnu.org/gnu/inetutils/inetutils-1.9.4.tar.xz \\
 Download and extract the sources:
 #+BEGIN_SRC shell
-  wget https://ftp.gnu.org/gnu/ineutils/ineutils-1.9.4.tar.gz
-  tar -xf ineutils-1.9.4.tar.gz
-  cd ineutils-1.9.4
+  wget https://ftp.gnu.org/gnu/inetutils/ineutils-1.9.4.tar.gz
+  tar -xf inetutils-1.9.4.tar.gz
+  cd inetutils-1.9.4
 #+END_SRC
 Configure sources:
 #+BEGIN_SRC shell
@@ -2455,7 +2459,7 @@ Build and install:
   make && make install
 #+END_SRC
 *** Automake
-Source: http://ftp.gnu.org/gnu/automake/automake-1.16.2.tar.xz \\
+Source: https://ftp.gnu.org/gnu/automake/automake-1.16.2.tar.xz \\
 Download and extract the sources:
 #+BEGIN_SRC shell
   wget https://ftp.gnu.org/gnu/automake/automake-1.16.2.tar.xz
@@ -2478,7 +2482,7 @@ Download and extract the sources:
 #+BEGIN_SRC shell
   wget https://github.com/pullmoll/musl-fts/archive/v1.2.7.tar.gz
   tar -xf v1.2.7.tar.gz
-  cd v1.2.7
+  cd musl-fts-1.2.7
 #+END_SRC
 Patch and configure:
 #+BEGIN_SRC shell
@@ -2497,7 +2501,7 @@ Download and extract the sources:
 #+BEGIN_SRC shell
   wget https://github.com/pullmoll/musl-obstack/archive/v1.1.tar.gz
   tar -xf v1.1.tar.gz
-  cd v1.1
+  cd musl-obstack-1.1
 #+END_SRC
 Patch and configure:
 #+BEGIN_SRC shell
@@ -2675,8 +2679,118 @@ Build and install:
 #+END_SRC
 *** Procps
 Source: https://sourceforge.net/projects/procps-ng/files/Production/procps-ng-3.3.16.tar.xz \\
+Download and extract the sources:
+#+BEGIN_SRC shell
+  wget https://sourceforge.net/projects/procps-ng/files/Production/procps-ng-3.3.16.tar.xz
+  tar -xf procps-ng-3.3.16.tar.xz
+  cd procps-ng-3.3.16
+#+END_SRC
+Configure sources:
+#+BEGIN_SRC shell
+  autoreconf -fi
+  ./configure                                  \
+      --prefix=/usr                            \
+      --exec-prefix=                           \
+      --libdir=/usr/lib                        \
+      --docdir=/usr/share/doc/procps-ng-3.3.16 \
+      --disable-static                         \
+      --disable-kill                           \
+      --without-systemd                        \
+      --disable-modern-top
+#+END_SRC
+Build and install:
+#+BEGIN_SRC shell
+  make && make install
+  mv -v /usr/lib/libprocps.so.* /lib
+  ln -sfv ../../lib/$(readlink /usr/lib/libprocps.so) /usr/lib/libprocps.so
+#+END_SRC
 *** Busybox
-*** Make
+Source: https://busybox.net/downloads/busybox-1.32.0.tar.bz2 \\
+Download and extract the sources:
+#+BEGIN_SRC shell
+  wget https://busybox.net/downloads/busybox-1.32.0.tar.bz2
+  tar -xf busybox-1.32.0.tar.bz2
+  cd busybox-1.32.0
+#+END_SRC
+Patch sources:
+#+BEGIN_SRC shell
+  for file in /patches/busybox/*; do
+      patch -p1 < "$file"
+  done
+#+END_SRC
+Build and install:
+#+BEGIN_SRC shell
+  make CC="cc" HOSTCC="cc"
+  make CONFIG_PREFIX="/usr" install
+
+  "/usr/bin/busybox" --list | while read -r bin; do
+      ln -s busybox "/usr/bin/$bin"
+  done
+#+END_SRC
+*** Check
+Source: https://github.com/libcheck/check/releases/download/0.15.2/check-0.15.2.tar.gz \\
+Download and extract the sources:
+#+BEGIN_SRC shell
+  wget https://github.com/libcheck/check/releases/download/0.15.2/check-0.15.2.tar.gz
+  tar -xf check-0.15.2.tar.gz
+  cd check-0.15.2
+#+END_SRC
+Configure:
+#+BEGIN_SRC shell
+  ./configure --prefix=/usr
+#+END_SRC
+Build and install:
+#+BEGIN_SRC shell
+  make && make install
+#+END_SRC
+Fix a script:
+#+BEGIN_SRC shell
+  sed -i '1 s/tools/usr/' /usr/bin/checkmk
+#+END_SRC
 *** Grub
+Source: https://ftp.gnu.org/gnu/grub/grub-2.04.tar.xz \\
+Download and extract the sources:
+#+BEGIN_SRC shell
+  wget https://ftp.gnu.org/gnu/grub/grub-2.04.tar.xz
+  tar -xf grub-2.04.tar.xz
+  cd grub-2.04
+#+END_SRC
+**** BIOS
+Configure sources:
+#+BEGIN_SRC shell
+  ./configure                \
+      --prefix=/usr          \
+      --sbindir=/sbin        \
+      --sysconfdir=/etc      \
+      --disable-efiemu       \
+      --disable-werror
+#+END_SRC
+**** UEFI
+Configure sources:
+#+BEGIN_SRC shell
+  ./configure                \
+      --prefix=/usr          \
+      --target=x86_64        \
+      --with-platform=efi    \
+      --sbindir=/sbin        \
+      --sysconfdir=/etc      \
+      --disable-werror
+#+END_SRC
+**** Build
+Build and install:
+#+BEGIN_SRC shell
+  make && make install
+#+END_SRC
 *** Gzip
+Configure sources:
+#+BEGIN_SRC shell
+  DEFS=NO_ASM gl_cv_func_fflush_stdin=yes \
+  ./configure --prefix=/usr
+#+END_SRC
+Build and install:
+#+BEGIN_SRC shell
+  make && make install
+  mv -v /usr/bin/gzip /bin
+#+END_SRC
+*** Make
 *** S6
