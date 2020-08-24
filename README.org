@@ -124,6 +124,7 @@
     - [[#xz-1][Xz]]
     - [[#kmod][Kmod]]
     - [[#gettext][Gettext]]
+    - [[#libffi][Libffi]]
     - [[#libressl][LibreSSL]]
     - [[#python][Python]]
     - [[#ninja-samurai][Ninja (Samurai)]]
@@ -137,6 +138,8 @@
       - [[#build-2][Build]]
     - [[#gzip-1][Gzip]]
     - [[#make-1][Make]]
+    - [[#man-db][Man DB]]
+    - [[#eudev][Eudev]]
     - [[#s6][S6]]
 
 * Partitions
@@ -2563,6 +2566,36 @@ Build and install:
   make LIBINTL=MUSL
   make LIBINTL=MUSL prefix=/usr install
 #+END_SRC
+*** Libffi
+Source: ftp://sourceware.org/pub/libffi/libffi-3.2.1.tar.gz
+Download and extract the sources:
+#+BEGIN_SRC shell
+  wget ftp://sourceware.org/pub/libffi/libffi-3.2.1.tar.gz
+  tar -xf libffi-3.2.1.tar.gz
+  cd libffi-3.2.1
+#+END_SRC
+Change location of the install directory:
+#+BEGIN_SRC shell
+  sed -e '/^includesdir/ s/$(libdir).*$/$(includedir)/' \
+      -i include/Makefile.in
+  sed -e '/^includedir/ s/=.*$/=@includedir@/' \
+      -e 's/^Cflags: -I${includedir}/Cflags:/' \
+      -i libffi.pc.in
+#+END_SRC
+Configure sources:
+#+BEGIN_SRC shell
+  ./configure          \
+      --prefix=/usr    \
+      --disable-static \
+      --with-gcc-arch=native
+#+END_SRC
+Build and install:
+#+BEGIN_SRC shell
+  make && make install
+
+  ln -s python3 "/usr/bin/python"
+  ln -s pip3    "/usr/bin/pip"
+#+END_SRC
 *** LibreSSL
 Source: https://ftp.openbsd.org/pub/OpenBSD/LibreSSL/libressl-3.2.0.tar.gz \\
 Download and extract the sources:
@@ -2625,10 +2658,10 @@ Configure sources:
 #+END_SRC
 Build and install:
 #+BEGIN_SRC shell
-    make && make install
+  make && make install
 
-    ln -s python3 "/usr/bin/python"
-    ln -s pip3    "/usr/bin/pip"
+  ln -s python3 "/usr/bin/python"
+  ln -s pip3    "/usr/bin/pip"
 #+END_SRC
 Make static library writable:
 #+BEGIN_SRC shell
@@ -2645,7 +2678,7 @@ Remove rarely used coponents:
 #+END_SRC
 Change permissions to allow stripping later
 #+BEGIN_SRC shell
-  chmod -v 755 /usr/lib/libpython3.8m.so
+  chmod -v 755 /usr/lib/libpython3.8.so
   chmod -v 755 /usr/lib/libpython3.so
 #+END_SRC
 *** Ninja (Samurai)
@@ -2658,8 +2691,8 @@ Download and extract the sources:
 #+END_SRC
 Build and install:
 #+BEGIN_SRC shell
-  make PREFIX=/usr
-  make PREFIX=/usr install
+  make CC=cc PREFIX=/usr
+  make CC=cc PREFIX=/usr install
   ln -s samu "$1/usr/bin/ninja"
 #+END_SRC
 *** Meson
@@ -2720,12 +2753,9 @@ Patch sources:
 #+END_SRC
 Build and install:
 #+BEGIN_SRC shell
+  make CC="cc" HOSTCC="cc" defconfig
   make CC="cc" HOSTCC="cc"
-  make CONFIG_PREFIX="/usr" install
-
-  "/usr/bin/busybox" --list | while read -r bin; do
-      ln -s busybox "/usr/bin/$bin"
-  done
+  make CC="cc" HOSTCC="cc" CONFIG_PREFIX="/usr" install
 #+END_SRC
 *** Check
 Source: https://github.com/libcheck/check/releases/download/0.15.2/check-0.15.2.tar.gz \\
@@ -2793,4 +2823,41 @@ Build and install:
   mv -v /usr/bin/gzip /bin
 #+END_SRC
 *** Make
+Configure sources:
+#+BEGIN_SRC shell
+  ./configure --prefix=/usr
+#+END_SRC
+Build and install:
+#+BEGIN_SRC shell
+  make && make install
+#+END_SRC
+*** Man DB
+Source: https://download.savannah.gnu.org/releases/man-db/man-db-2.9.3.tar.xz \\
+Download and extract the sources:
+#+BEGIN_SRC shell
+  wget https://download.savannah.gnu.org/releases/man-db/man-db-2.9.3.tar.xz
+  tar -xf man-db-2.9.3.tar.xz
+  cd man-db-2.9.3
+#+END_SRC
+Configure sources:
+#+BEGIN_SRC shell
+  ./configure \
+      --prefix=/usr                        \
+      --docdir=/usr/share/doc/man-db-2.9.3 \
+      --sysconfdir=/etc                    \
+      --disable-setuid                     \
+      --enable-cache-owner=bin             \
+      --with-browser=/usr/bin/lynx         \
+      --with-vgrind=/usr/bin/vgrind        \
+      --with-grap=/usr/bin/grap            \
+      --with-systemdtmpfilesdir=
+#+END_SRC
+Build and install:
+#+BEGIN_SRC shell
+  make && make install
+#+END_SRC
+*** Eudev
+Sources: 
+  - https://dev.gentoo.org/~blueness/eudev/eudev-3.2.9.tar.gz
+  - http://anduin.linuxfromscratch.org/LFS/udev-lfs-20171102.tar.xz
 *** S6
