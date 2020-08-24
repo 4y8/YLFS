@@ -138,9 +138,14 @@
       - [[#build-2][Build]]
     - [[#gzip-1][Gzip]]
     - [[#make-1][Make]]
+    - [[#libpipeline][Libpipeline]]
     - [[#man-db][Man DB]]
     - [[#eudev][Eudev]]
+    - [[#cpio][CPIO]]
+    - [[#skalibs][Skalibs]]
+    - [[#execline][Execline]]
     - [[#s6][S6]]
+    - [[#s6-linux-utils][S6-linux-utils]]
 
 * Partitions
 ** BIOS
@@ -261,8 +266,8 @@ Configure source:
 #+BEGIN_SRC shell
   ../configure                                  \
      --prefix=/cross-tools                      \
-     --target=${YLFS_TARGET}                    \
-     --with-sysroot=/cross-tools/${YLFS_TARGET} \
+     --target="$YLFS_TARGET"                    \
+     --with-sysroot="/cross-tools/$YLFS_TARGET" \
      --disable-nls                              \
      --disable-multilib                         \
      --disable-werror                           \
@@ -291,18 +296,18 @@ Download and extract the sources:
 #+END_SRC
 Clean sources:
 #+BEGIN_SRC shell
-  ARCH=${YLFS_ARCH} make mrproper
+  ARCH="$YLFS_ARCH" make mrproper
 #+END_SRC
 Build headers:
 #+BEGIN_SRC shell
-  ARCH=${YLFS_ARCH} make headers_check
+  ARCH="$YLFS_ARCH" make headers_check
 #+END_SRC
 Install and clean:
 #+BEGIN_SRC shell
-  ARCH=${YLFS_ARCH} make headers
+  ARCH="$YLFS_ARCH" make headers
   rm usr/include/Makefile
-  mkdir -pv /cross-tools/${YLFS_TARGET}/include
-  cp -rv usr/include/* /cross-tools/${YLFS_TARGET}/include
+  mkdir -pv "/cross-tools/$YLFS_TARGET/include"
+  cp -rv usr/include/* "/cross-tools/$YLFS_TARGET/include"
 #+END_SRC
 *** GCC Static
 Source: https://ftp.gnu.org/gnu/gcc/gcc-10.2.0/gcc-10.2.0.tar.xz \\
@@ -339,29 +344,29 @@ Configure sources:
 #+BEGIN_SRC shell
   CFLAGS='-g0 -O0'   \
   CXXFLAGS='-g0 -O0' \
-  ../configure                                            \
-        --prefix=${YLFS}/cross-tools                      \
-        --build=${MACHTYPE}                               \
-        --host=${MACHTYPE}                                \
-        --target=${YLFS_TARGET}                           \
-        --with-sysroot=${YLFS}/cross-tools/${YLFS_TARGET} \
-        --disable-nls                                     \
-        --with-newlib                                     \
-        --disable-libitm                                  \
-        --disable-libvtv                                  \
-        --disable-libssp                                  \
-        --disable-shared                                  \
-        --disable-libgomp                                 \
-        --without-headers                                 \
-        --disable-threads                                 \
-        --disable-multilib                                \
-        --disable-libatomic                               \
-        --disable-libstdcxx                               \
-        --enable-languages=c                              \
-        --disable-libquadmath                             \
-        --disable-libsanitizer                            \
-        --with-arch=${YLFS_CPU}                           \
-        --disable-decimal-float                           \
+  ../configure                                          \
+        --prefix="$YLFS/cross-tools"                    \
+        --build="$MACHTYPE"                             \
+        --host="$MACHTYPE"                              \
+        --target="$YLFS_TARGET"                         \
+        --with-sysroot="$YLFS/cross-tools/$YLFS_TARGET" \
+        --disable-nls                                   \
+        --with-newlib                                   \
+        --disable-libitm                                \
+        --disable-libvtv                                \
+        --disable-libssp                                \
+        --disable-shared                                \
+        --disable-libgomp                               \
+        --without-headers                               \
+        --disable-threads                               \
+        --disable-multilib                              \
+        --disable-libatomic                             \
+        --disable-libstdcxx                             \
+        --enable-languages=c                            \
+        --disable-libquadmath                           \
+        --disable-libsanitizer                          \
+        --with-arch="$YLFS_CPU"                         \
+        --disable-decimal-float                         \
         --enable-clocale=generic
 #+END_SRC
 Build and install the only the minimum needed:
@@ -379,10 +384,10 @@ Download and extract the sources:
 #+END_SRC
 Configure cross build:
 #+BEGIN_SRC shell
-  ./configure \
-    CROSS_COMPILE=${YLFS_TARGET}- \
-    --prefix=/ \
-    --target=${YLFS_TARGET}
+  ./configure                     \
+    CROSS_COMPILE="$YLFS_TARGET-" \
+    --prefix=/                    \
+    --target="$YLFS_TARGET"
 #+END_SRC
 Build and install:
 #+BEGIN_SRC shell
@@ -410,24 +415,24 @@ Create the build directory:
 Configure sources:
 #+BEGIN_SRC shell
   AR=ar LDFLAGS="-Wl,-rpath,/cross-tools/lib" \
-  ../configure \
-      --prefix=/cross-tools \
-      --build=${YLFS_HOST} \
-      --host=${YLFS_HOST} \
-      --target=${YLFS_TARGET} \
-      --disable-multilib \
-      --with-sysroot=/cross-tools \
-      --disable-nls \
-      --enable-shared \
-      --enable-languages=c,c++ \
-      --enable-threads=posix \
-      --enable-clocale=generic \
-      --enable-libstdcxx-time \
-      --enable-fully-dynamic-string \
-      --disable-symvers \
-      --disable-libsanitizer \
-      --disable-lto-plugin \
-      --disable-libssp
+    ../configure                              \
+    --prefix=/cross-tools                     \
+    --build="$YLFS_HOST"                      \
+    --host="$YLFS_HOST"                       \
+    --target="$YLFS_TARGET"                   \
+    --disable-multilib                        \
+    --with-sysroot=/cross-tools               \
+    --disable-nls                             \
+    --enable-shared                           \
+    --enable-languages=c,c++                  \
+    --enable-threads=posix                    \
+    --enable-clocale=generic                  \
+    --enable-libstdcxx-time                   \
+    --enable-fully-dynamic-string             \
+    --disable-symvers                         \
+    --disable-libsanitizer                    \
+    --disable-lto-plugin                      \
+    --disable-libssp
 #+END_SRC
 Build:
 #+BEGIN_SRC shell
@@ -753,7 +758,7 @@ Configure sources:
       --disable-nls                   \
       --disable-libstdcxx-threads     \
       --disable-libstdcxx-pch         \
-      --with-gxx-include-dir="/tools/${YLFS_TARGET}/include/c++/10.2.0"
+      --with-gxx-include-dir="/tools/$YLFS_TARGET/include/c++/10.2.0"
 #+END_SRC
 Build and install:
 #+BEGIN_SRC shell
@@ -774,9 +779,9 @@ Configure sources:
       --prefix=/tools            \
       --with-sysroot             \
       --with-lib-path=/tools/lib \
-      --build=${YLFS_HOST}       \
-      --host=${YLFS_TARGET}      \
-      --target=${YLFS_TARGET}    \
+      --build="$YLFS_HOST"       \
+      --host="$YLFS_TARGET"      \
+      --target="$YLFS_TARGET"    \
       --disable-nls              \
       --disable-werror
 #+END_SRC
@@ -930,8 +935,8 @@ Update files to support Musl Libc for configure:
 Configure sources:
 #+BEGIN_SRC shell
   ./configure               \
-      --build=${YLFS_HOST}  \
-      --host=${YLFS_TARGET} \
+      --build="$YLFS_HOST"  \
+      --host="$YLFS_TARGET" \
       --prefix=/tools       \
       --with-tcl=/tools/lib \
       --with-tclinclude=/tools/include
@@ -1120,8 +1125,8 @@ Supress a test which may can cause an infinite loop:
 Configure sources:
 #+BEGIN_SRC shell
   ./configure                           \
-      --build=${YLFS_HOST}              \
-      --host=${YLFS_TARGET}             \
+      --build="$YLFS_HOST"              \
+      --host="$YLFS_TARGET"             \
       --prefix=/tools                   \
       --enable-install-program=hostname \
       --cache-file=config.cache
@@ -1288,8 +1293,8 @@ Download and extract the sources:
 Configure sources:
 #+BEGIN_SRC shell
   ./configure               \
-      --build=${YLFS_HOST}  \
-      --host=${YLFS_TARGET} \
+      --build="$YLFS_HOST"  \
+      --host="$YLFS_TARGET" \
       --prefix=/tools
 #+END_SRC
 Build and install:
@@ -1314,7 +1319,7 @@ Configure sources:
 #+BEGIN_SRC shell
   ./configure        \
       --prefix=/tool \
-      --target=${YLFS_TARGET}
+      --target="$YLFS_TARGET"
 #+END_SRC
 Build:
 #+BEGIN_SRC shell
@@ -2592,9 +2597,6 @@ Configure sources:
 Build and install:
 #+BEGIN_SRC shell
   make && make install
-
-  ln -s python3 "/usr/bin/python"
-  ln -s pip3    "/usr/bin/pip"
 #+END_SRC
 *** LibreSSL
 Source: https://ftp.openbsd.org/pub/OpenBSD/LibreSSL/libressl-3.2.0.tar.gz \\
@@ -2660,12 +2662,12 @@ Build and install:
 #+BEGIN_SRC shell
   make && make install
 
-  ln -s python3 "/usr/bin/python"
-  ln -s pip3    "/usr/bin/pip"
+  ln -s python3 /usr/bin/python
+  ln -s pip3    /usr/bin/pip
 #+END_SRC
 Make static library writable:
 #+BEGIN_SRC shell
-  chmod u+w "$1/usr/lib/libpython"*
+  chmod u+w "/usr/lib/libpython"*
 #+END_SRC
 Remove rarely used coponents:
 #+BEGIN_SRC shell
@@ -2673,7 +2675,7 @@ Remove rarely used coponents:
   rm -rf test ./*/test ./*/tests
   rm -rf pydoc* idlelib turtle* config-* ensurepip
 
-  cd "/usr/bin"
+  cd /usr/bin
   rm -f pydoc* idle*
 #+END_SRC
 Change permissions to allow stripping later
@@ -2693,7 +2695,7 @@ Build and install:
 #+BEGIN_SRC shell
   make CC=cc PREFIX=/usr
   make CC=cc PREFIX=/usr install
-  ln -s samu "$1/usr/bin/ninja"
+  ln -s samu "/usr/bin/ninja"
 #+END_SRC
 *** Meson
 Source: https://github.com/mesonbuild/meson/releases/download/0.55.1/meson-0.55.1.tar.gz \\
@@ -2831,6 +2833,22 @@ Build and install:
 #+BEGIN_SRC shell
   make && make install
 #+END_SRC
+*** Libpipeline
+Source: http://download.savannah.gnu.org/releases/libpipeline/libpipeline-1.5.3.tar.gz \\
+Download and extract the sources:
+#+BEGIN_SRC shell
+  wget https://download.savannah.gnu.org/releases/libpipeline/libpipeline-1.5.3.tar.xz
+  tar -xf libpipeline-1.5.3.tar.xz
+  cd libpipeline-1.5.3
+#+END_SRC
+Configure sources:
+#+BEGIN_SRC shell
+  ./configure --prefix=/usr
+#+END_SRC
+Build and install:
+#+BEGIN_SRC shell
+  make && make install
+#+END_SRC
 *** Man DB
 Source: https://download.savannah.gnu.org/releases/man-db/man-db-2.9.3.tar.xz \\
 Download and extract the sources:
@@ -2841,7 +2859,7 @@ Download and extract the sources:
 #+END_SRC
 Configure sources:
 #+BEGIN_SRC shell
-  ./configure \
+  ./configure                              \
       --prefix=/usr                        \
       --docdir=/usr/share/doc/man-db-2.9.3 \
       --sysconfdir=/etc                    \
@@ -2860,4 +2878,150 @@ Build and install:
 Sources: 
   - https://dev.gentoo.org/~blueness/eudev/eudev-3.2.9.tar.gz
   - http://anduin.linuxfromscratch.org/LFS/udev-lfs-20171102.tar.xz
+Download and extract the sources:
+#+BEGIN_SRC shell
+  wget https://dev.gentoo.org/~blueness/eudev/eudev-3.2.9.tar.gz
+  tar -xf eudev-3.2.9.tar.gz
+  cd eudev-3.2.9
+#+END_SRC
+Configure sources:
+#+BEGIN_SRC shell
+  cat > config.cache << "EOF"
+  HAVE_BLKID=1
+  BLKID_LIBS="-lblkid"
+  BLKID_CFLAGS="-I/tools/include"
+  EOF
+
+  ./configure                 \
+      --prefix=/usr           \
+      --bindir=/sbin          \
+      --sbindir=/sbin         \
+      --libdir=/usr/lib       \
+      --sysconfdir=/etc       \
+      --libexecdir=/lib       \
+      --with-rootprefix=      \
+      --with-rootlibdir=/lib  \
+      --enable-manpages       \
+      --disable-static        \
+      --config-cache
+#+END_SRC
+Build and install:
+#+BEGIN_SRC shell
+  LIBRARY_PATH=/tools/lib make && make LD_LIBRARY_PATH=/tools/lib install
+#+END_SRC
+Download and extract the other sources:
+#+BEGIN_SRC shell
+  wget http://anduin.linuxfromscratch.org/LFS/udev-lfs-20171102.tar.xz
+  tar -xf udev-lfs-20171102.tar.xz
+#+END_SRC
+Edit udev-lfs-20171102/55-lfs.rules:
+Comment out the lines for rtc:
+#+BEGIN_SRC shell
+  make -f udev-lfs-20171102/Makefile.lfs install
+#+END_SRC
+*** CPIO
+Source: https://ftp.gnu.org/gnu/cpio/cpio-2.13.tar.bz2 \\
+Download and extract the sources:
+#+BEGIN_SRC shell
+  wget https://ftp.gnu.org/gnu/cpio/cpio-2.13.tar.bz2
+  tar -xf cpio-2.13.tar.bz2
+  cd cpio-2.13
+#+END_SRC
+Apply patches:
+#+BEGIN_SRC shell
+  for file in /patches/cpio/*; do
+      patch -p1 < "$file"
+  done
+#+END_SRC
+Configure sources:
+#+BEGIN_SRC shell
+  autoreconf -ifv
+
+  ./configure       \
+      --prefix=/usr \
+      --bindir=/bin \
+      --enable-mt   \
+      --with-rmt=/usr/libexec/rmt
+#+END_SRC
+Build and install:
+#+BEGIN_SRC shell
+  make && make install
+#+END_SRC
+*** Skalibs
+Source: https://www.skarnet.org/software/skalibs/skalibs-2.9.2.1.tar.gz \\
+Download and extract the sources:
+#+BEGIN_SRC shell
+  wget https://www.skarnet.org/software/skalibs/skalibs-2.9.2.1.tar.gz
+  tar -xf skalibs-2.9.2.1.tar.gz
+  cd skalibs-2.9.2.1
+#+END_SRC
+Configure sources:
+#+BEGIN_SRC shell
+  ./configure       \
+      --prefix=/usr \
+      --enable-force-devr
+#+END_SRC
+Build and install:
+#+BEGIN_SRC shell
+  make && make install
+#+END_SRC
+*** Execline
+Source: https://www.skarnet.org/software/execline/execline-2.6.1.0.tar.gz \\
+Download and extract the sources:
+#+BEGIN_SRC shell
+  wget https://www.skarnet.org/software/execline/execline-2.6.1.0.tar.gz
+  tar -xf execline-2.6.1.0.tar.gz
+  cd execline-2.6.1.0
+#+END_SRC
+Configure sources:
+#+BEGIN_SRC shell
+  ./configure                     \
+      --prefix=/usr               \
+      --with-lib=/usr/lib/skalibs \
+      --bindir=/bin               \
+      --enabled-shared
+#+END_SRC
+Build and install:
+#+BEGIN_SRC shell
+  make && make install
+#+END_SRC
 *** S6
+Source: https://www.skarnet.org/software/s6/s6-2.9.2.0.tar.gz \\
+Download and extract the sources:
+#+BEGIN_SRC shell
+  wget https://www.skarnet.org/software/s6/s6-2.9.2.0.tar.gz
+  tar -xf s6-2.9.2.0.tar.gz
+  cd s6-2.9.2.0
+#+END_SRC
+Configure sources:
+#+BEGIN_SRC shell
+  ./configure                      \
+      --prefix=/usr                \
+      --bindir=/bin                \
+      --with-lib=/usr/lib/skalibs  \
+      --bindir=/bin                \
+      --with-lib=/usr/lib/libexec  \
+      --with-lib=/usr/lib/execline \
+      --with-dynlib=/usr/lib       \
+      --enabled-shared
+#+END_SRC
+Build and install:
+#+BEGIN_SRC shell
+  make && make install
+#+END_SRC
+*** S6-linux-utils
+Source: https://www.skarnet.org/software/s6-linux-utils/s6-linux-utils-2.5.0.1.tar.gz \\
+Download and extract the sources:
+#+BEGIN_SRC shell
+  wget https://www.skarnet.org/software/s6-linux-utils/s6-linux-utils-2.5.0.1.tar.gz
+  tar -xf s6-linux-utils-2.5.0.1.tar.gz
+  cd s6-linux-utils-2.5.0.1
+#+END_SRC
+Configure sources:
+#+BEGIN_SRC shell
+  ./configure
+#+END_SRC
+Build and install:
+#+BEGIN_SRC shell
+  make && make install
+#+END_SRC
