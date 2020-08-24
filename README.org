@@ -116,6 +116,7 @@
     - [[#gperf][Gperf]]
     - [[#expat][Expat]]
     - [[#inetutils][Inetutils]]
+    - [[#perl-1][Perl]]
     - [[#toybox-1][Toybox]]
 
 * Partitions
@@ -435,10 +436,10 @@ Build and install:
 *** Musl
 Configure sources:
 #+BEGIN_SRC shell
-  ./configure \
-    CROSS_COMPILE=${YLFS_TARGET}- \
-    --prefix=/ \
-    --target=${YLFS_TARGET}
+  ./configure                     \
+    CROSS_COMPILE="$YLFS_TARGET-" \
+    --prefix=/                    \
+    --target="$YLFS_TARGET"
 #+END_SRC
 Build and install:
 #+BEGIN_SRC shell
@@ -487,7 +488,7 @@ Modify dumped specs file:
 **** Install specs
 Install the modified specs:
 #+BEGIN_SRC shell
-  mv -v specs $SPECFILE
+  mv -v specs "$SPECFILE"
   unset SPECFILE
 #+END_SRC
 **** Check tool chain
@@ -535,11 +536,11 @@ Configure sources:
 #+BEGIN_SRC shell
   ../configure                   \
       --prefix=/tools            \
-      --with-sysroot=${YLFS}     \
+      --with-sysroot="$YLFS"     \
       --with-lib-path=/tools/lib \
-      --build=${YLFS_HOST}       \
-      --host=${YLFS_TARGET}      \
-      --target=${YLFS_TARGET}    \
+      --build="$YLFS_HOST"       \
+      --host="$YLFS_TARGET"      \
+      --target="$YLFS_TARGET"    \
       --disable-nls              \
       --disable-werror
 #+END_SRC
@@ -1416,7 +1417,7 @@ Remove unneeded files:
 *** Ownership
 Change tools directory's owner to avoid later conflicts:
 #+BEGIN_SRC shell
-  chown -R root:root "${YLFS}/tools"
+  chown -R root:root "$YLFS/tools"
 #+END_SRC
 *** VKFS
 Switch to root user:
@@ -1429,9 +1430,9 @@ Export again variables:
 #+END_SRC
 Create new directories and nodes:
 #+BEGIN_SRC shell
-  mkdir -pv ${YLFS}/{dev,proc,sys,run}
-  mknod -m 600 ${YLFS}/dev/console c 5 1
-  mknod -m 666 ${YLFS}/dev/null c 1 3
+  mkdir -pv "$YLFS/{dev,proc,sys,run}"
+  mknod -m 600 "$YLFS/dev/console" c 5 1
+  mknod -m 666 "$YLFS/dev/null" c 1 3
 #+END_SRC
 Mount the new virtual file system:
 #+BEGIN_SRC shell
@@ -2314,12 +2315,16 @@ Build and install:
   make && make install
 #+END_SRC
 *** Gdbm
-Source: https://ftp.gnu.org/gnu/gdbm/gdbm-1.18.1.tar.xz \\
+Source: https://ftp.gnu.org/gnu/gdbm/gdbm-1.18.1.tar.gz \\
 Download and extract the sources:
 #+BEGIN_SRC shell
-  wget https://ftp.gnu.org/gnu/gdbm/gdbm-1.18.1.tar.xz
-  tar -xf gdbm-1.18.1.tar.xz
+  wget https://ftp.gnu.org/gnu/gdbm/gdbm-1.18.1.tar.gz
+  tar -xf gdbm-1.18.1.tar.gz
   cd gdbm-1.18.1
+#+END_SRC
+Patch sources:
+#+BEGIN_SRC shell
+  patch -Np0 -i /patches/gdbl-gcc10.patch
 #+END_SRC
 Configure sources:
 #+BEGIN_SRC shell
@@ -2396,6 +2401,7 @@ Build and install:
 #+BEGIN_SRC shell
   make && make install
 #+END_SRC
+*** Perl
 *** Toybox
 Configure, build and install.
 #+BEGIN_SRC shell
