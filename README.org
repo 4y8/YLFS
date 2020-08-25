@@ -140,21 +140,14 @@
     - [[#make-1][Make]]
     - [[#libpipeline][Libpipeline]]
     - [[#man-db][Man DB]]
-    - [[#eudev][Eudev]]
     - [[#cpio][CPIO]]
-    - [[#skalibs][Skalibs]]
-    - [[#execline][Execline]]
-    - [[#s6][S6]]
-    - [[#s6-linux-utils][S6-linux-utils]]
-    - [[#s6-portable-utils][S6-portable-utils]]
-    - [[#s6-rc][S6-rc]]
-    - [[#s6-linux-init][S6-linux-init]]
+    - [[#sinit][Sinit]]
     - [[#dhcp][DHCP]]
   - [[#clean-up][Clean up]]
     - [[#stripping][Stripping]]
     - [[#other-clean-up][Other clean up]]
   - [[#final-configuration][Final configuration]]
-    - [[#s6-bootscripts][S6-bootscripts]]
+    - [[#init-scripts][Init scripts]]
     - [[#networking][Networking]]
       - [[#wi-fi][Wi-Fi]]
       - [[#ethernet][Ethernet]]
@@ -182,8 +175,8 @@ Finally, mount the partitions in the =/mnt/ylfs= directory:
   export YLFS=/mnt/ylfs
   mkdir -pv "$YLFS"
   mount /dev/sda3 "$YLFS"
-  mkdir "{$YLFS}/boot"
-  mount /dev/sda1 "${YLFS}/boot"
+  mkdir "$YLFS/boot"
+  mount /dev/sda1 "$YLFS/boot"
 #+END_SRC
 ** TODO UEFI
 * Preparation
@@ -1075,8 +1068,8 @@ Download and extract the sources:
 Configure sources:
 #+BEGIN_SRC shell
   ./configure               \
-      --build=${YLFS_HOST}  \
-      --host=${YLFS_TARGET} \
+      --build="$YLFS_HOST"  \
+      --host="$YLFS_TARGET" \
       --prefix=/tools
 #+END_SRC
 Build and install:
@@ -1100,12 +1093,12 @@ Fix =Makefiles= to install links and man pages in the correct location:
 #+END_SRC
 Clean and prepare sources:
 #+BEGIN_SRC shell
-  make -f Makefile-libbz2_so CC="${CC}" AR="${AR}" RANLIB="${RANLIB}"
+  make -f Makefile-libbz2_so CC="$CC" AR="$AR" RANLIB="$RANLIB"
   make clean
 #+END_SRC
 Build and install:
 #+BEGIN_SRC shell
-  make CC="${CC}" AR="${AR}" RANLIB="${RANLIB}"
+  make CC="$CC" AR="$AR" RANLIB="$RANLIB"
   make PREFIX=/tools install
 #+END_SRC
 *** Coreutils
@@ -1247,8 +1240,8 @@ Download and extract the sources:
 Configure sources:
 #+BEGIN_SRC shell
   ./configure               \
-      --build=${YLFS_HOST}  \
-      --host=${YLFS_TARGET} \
+      --build="$YLFS_HOST"  \
+      --host="$YLFS_TARGET" \
       --prefix=/tools
 #+END_SRC
 Build and install:
@@ -1458,12 +1451,12 @@ Create new directories and nodes:
 #+END_SRC
 Mount the new virtual file system:
 #+BEGIN_SRC shell
-  mount -v --bind /dev "$YLFS/dev"
+  mount -v --bind  /dev   "$YLFS/dev"
   mount -vt devpts devpts "$YLFS/dev/pts -o gid=5,mode=620"
-  mount -vt proc proc ${YLFS}/proc
-  mount -vt sysfs sysfs ${YLFS}/sys
-  mount -vt tmpfs tmpfs ${YLFS}/run
-  if [ -h ${YLFS}/dev/shm ]; then
+  mount -vt proc   proc   "$YLFS/proc"
+  mount -vt sysfs  sysfs  "$YLFS/sys"
+  mount -vt tmpfs  tmpfs  "$YLFS/run"
+  if [ -h "$YLFS/dev/shm" ]; then
     mkdir -pv "$YLFS/$(readlink $YLFS/dev/shm)"
   fi
 #+END_SRC
@@ -1645,9 +1638,9 @@ Install data:
   install -m444 -t /usr/share/zoneinfo iso3166.tab zone1970.tab zone.tab
   export timezones="africa antarctica asia australasia europe northamerica \
                   southamerica pacificnew etcetera backward systemv factory"
-  zic -y ./yearistype -d /usr/share/zoneinfo ${timezones}
-  zic -y ./yearistype -d /usr/share/zoneinfo/posix ${timezones}
-  zic -y ./yearistype -d /usr/share/zoneinfo/right -L leapseconds ${timezones}
+  zic -y ./yearistype -d /usr/share/zoneinfo "$timezones"
+  zic -y ./yearistype -d /usr/share/zoneinfo/posix "$timezones"
+  zic -y ./yearistype -d /usr/share/zoneinfo/right -L leapseconds "$timezones"
   zic -y ./yearistype -d /usr/share/zoneinfo -p America/New_York
   unset timezones
 #+END_SRC
@@ -2886,51 +2879,6 @@ Build and install:
 #+BEGIN_SRC shell
   make && make install
 #+END_SRC
-*** Eudev
-Sources: 
-  - https://dev.gentoo.org/~blueness/eudev/eudev-3.2.9.tar.gz
-  - http://anduin.linuxfromscratch.org/LFS/udev-lfs-20171102.tar.xz
-Download and extract the sources:
-#+BEGIN_SRC shell
-  wget https://dev.gentoo.org/~blueness/eudev/eudev-3.2.9.tar.gz
-  tar -xf eudev-3.2.9.tar.gz
-  cd eudev-3.2.9
-#+END_SRC
-Configure sources:
-#+BEGIN_SRC shell
-  cat > config.cache << "EOF"
-  HAVE_BLKID=1
-  BLKID_LIBS="-lblkid"
-  BLKID_CFLAGS="-I/tools/include"
-  EOF
-
-  ./configure                 \
-      --prefix=/usr           \
-      --bindir=/sbin          \
-      --sbindir=/sbin         \
-      --libdir=/usr/lib       \
-      --sysconfdir=/etc       \
-      --libexecdir=/lib       \
-      --with-rootprefix=      \
-      --with-rootlibdir=/lib  \
-      --enable-manpages       \
-      --disable-static        \
-      --config-cache
-#+END_SRC
-Build and install:
-#+BEGIN_SRC shell
-  LIBRARY_PATH=/tools/lib make && make LD_LIBRARY_PATH=/tools/lib install
-#+END_SRC
-Download and extract the other sources:
-#+BEGIN_SRC shell
-  wget http://anduin.linuxfromscratch.org/LFS/udev-lfs-20171102.tar.xz
-  tar -xf udev-lfs-20171102.tar.xz
-#+END_SRC
-Edit udev-lfs-20171102/55-lfs.rules:
-Comment out the lines for rtc:
-#+BEGIN_SRC shell
-  make -f udev-lfs-20171102/Makefile.lfs install
-#+END_SRC
 *** CPIO
 Source: https://ftp.gnu.org/gnu/cpio/cpio-2.13.tar.bz2 \\
 Download and extract the sources:
@@ -2959,146 +2907,17 @@ Build and install:
 #+BEGIN_SRC shell
   make && make install
 #+END_SRC
-*** Skalibs
-Source: https://www.skarnet.org/software/skalibs/skalibs-2.9.2.1.tar.gz \\
+*** Sinit
+Source: https://dl.suckless.org/sinit/sinit-1.0.tar.gz \\
 Download and extract the sources:
 #+BEGIN_SRC shell
-  wget https://www.skarnet.org/software/skalibs/skalibs-2.9.2.1.tar.gz
-  tar -xf skalibs-2.9.2.1.tar.gz
-  cd skalibs-2.9.2.1
+  wget https://dl.suckless.org/sinit/sinit-1.0.tar.gz
+  tar -xf sinit-1.0.tar.gz
+  cd sinit-1.0
 #+END_SRC
-Configure sources:
+Apply patch to dump to 1.1:
 #+BEGIN_SRC shell
-  ./configure       \
-      --prefix=/usr \
-      --enable-force-devr
-#+END_SRC
-Build and install:
-#+BEGIN_SRC shell
-  make && make install
-#+END_SRC
-*** Execline
-Source: https://www.skarnet.org/software/execline/execline-2.6.1.0.tar.gz \\
-Download and extract the sources:
-#+BEGIN_SRC shell
-  wget https://www.skarnet.org/software/execline/execline-2.6.1.0.tar.gz
-  tar -xf execline-2.6.1.0.tar.gz
-  cd execline-2.6.1.0
-#+END_SRC
-Configure sources:
-#+BEGIN_SRC shell
-  ./configure                     \
-      --prefix=/usr               \
-      --bindir=/bin               \
-      --with-lib=/usr/lib/skalibs \
-      --enabled-shared
-#+END_SRC
-Build and install:
-#+BEGIN_SRC shell
-  make && make install
-#+END_SRC
-*** S6
-Source: https://www.skarnet.org/software/s6/s6-2.9.2.0.tar.gz \\
-Download and extract the sources:
-#+BEGIN_SRC shell
-  wget https://www.skarnet.org/software/s6/s6-2.9.2.0.tar.gz
-  tar -xf s6-2.9.2.0.tar.gz
-  cd s6-2.9.2.0
-#+END_SRC
-Configure sources:
-#+BEGIN_SRC shell
-  ./configure                      \
-      --prefix=/usr                \
-      --bindir=/bin                \
-      --with-lib=/usr/lib/skalibs  \
-      --with-lib=/usr/lib/libexec  \
-      --with-lib=/usr/lib/execline \
-      --with-dynlib=/usr/lib       \
-      --enabled-shared
-#+END_SRC
-Build and install:
-#+BEGIN_SRC shell
-  make && make install
-#+END_SRC
-*** S6-linux-utils
-Source: https://www.skarnet.org/software/s6-linux-utils/s6-linux-utils-2.5.0.1.tar.gz \\
-Download and extract the sources:
-#+BEGIN_SRC shell
-  wget https://www.skarnet.org/software/s6-linux-utils/s6-linux-utils-2.5.0.1.tar.gz
-  tar -xf s6-linux-utils-2.5.0.1.tar.gz
-  cd s6-linux-utils-2.5.0.1
-#+END_SRC
-Configure sources:
-#+BEGIN_SRC shell
-  ./configure
-#+END_SRC
-Build and install:
-#+BEGIN_SRC shell
-  make && make install
-#+END_SRC
-*** S6-portable-utils
-Source: https://www.skarnet.org/software/s6-portable-utils/s6-portable-utils-2.2.2.4.tar.gz \\
-Download and extract the sources:
-#+BEGIN_SRC shell
-  wget https://www.skarnet.org/software/s6-portable-utils/s6-portable-utils-2.2.2.4.tar.gz
-  tar -xf s6-portable-utils-2.2.2.4.tar.gz
-  cd s6-portable-utils-2.2.2.4
-#+END_SRC
-Configure sources:
-#+BEGIN_SRC shell
-  ./configure                      \
-      --prefix=/usr                \
-      --with-lib=/usr/lib/skalibs  \
-      --with-lib=/usr/lib/libexec  \
-      --with-lib=/usr/lib/execline \
-      --with-dynlib=/usr/lib       \
-      --enabled-shared
-#+END_SRC
-Build and install:
-#+BEGIN_SRC shell
-  make && make install
-#+END_SRC
-*** S6-rc
-Source: https://www.skarnet.org/software/s6-rc/s6-rc-0.5.1.4.tar.gz \\
-Download and extract the sources:
-#+BEGIN_SRC shell
-  wget https://www.skarnet.org/software/s6-rc/s6-rc-0.5.1.4.tar.gz
-  tar -xf s6-rc-0.5.1.4.tar.gz
-  cd s6-rc-0.5.1.4
-#+END_SRC
-Configure sources:
-#+BEGIN_SRC shell
-  ./configure                      \
-      --prefix=/usr                \
-      --with-lib=/usr/lib/skalibs  \
-      --with-lib=/usr/lib/libexec  \
-      --with-lib=/usr/lib/execline \
-      --with-lib=/usr/lib/s6       \
-      --with-dynlib=/usr/lib       \
-      --enabled-shared
-#+END_SRC
-Build and install:
-#+BEGIN_SRC shell
-  make && make install
-#+END_SRC
-*** S6-linux-init
-Source: https://www.skarnet.org/software/s6-linux-init/s6-linux-init-1.0.4.2.tar.gz \\
-Download and extract the sources:
-#+BEGIN_SRC shell
-  wget https://www.skarnet.org/software/s6-linux-init/s6-linux-init-1.0.4.2.tar.gz
-  tar -xf s6-linux-init-1.0.4.2.tar.gz
-  cd s6-linux-init-1.0.4.2
-#+END_SRC
-Configure sources:
-#+BEGIN_SRC shell
-  ./configure                      \
-      --prefix=/usr                \
-      --with-lib=/usr/lib/skalibs  \
-      --with-lib=/usr/lib/libexec  \
-      --with-lib=/usr/lib/execline \
-      --with-lib=/usr/lib/s6       \
-      --with-dynlib=/usr/lib       \
-      --enabled-shared
+  patch -p1 < /patches/sinit-1.1.patch
 #+END_SRC
 Build and install:
 #+BEGIN_SRC shell
@@ -3157,25 +2976,13 @@ Remove build times directory:
   rm -rf /{cross-tools,tools}
 #+END_SRC
 ** Final configuration
-*** S6-bootscripts
-Source: https://github.com/dslm4515/MLFS-S6-Bootscripts/releases/download/3.02/MLFS-S6-Bootscripts-3.02.tar.xz \\
+*** Init scripts
+Source: https://github.com/Yul3n/init-scripts/releases/download/0.1/init-scripts-0.1.tar.xz \\
 Download and extract the sources:
 #+BEGIN_SRC shell
-  wget https://github.com/dslm4515/MLFS-S6-Bootscripts/releases/download/3.02/MLFS-S6-Bootscripts-3.02.tar.xz
-  tar -xf MLFS-S6-Bootscripts-3.02.tar.xz
-  cd MLFS-S6-Bootscripts-3.02
-#+END_SRC
-Install bootscripts:
-#+BEGIN_SRC shell
-  cp -rav s6 /etc/
-#+END_SRC
-Compile =basic= database:
-#+BEGIN_SRC shell
-  s6-rc-compile /etc/s6/db/basic /etc/s6/db-src/basic
-#+END_SRC
-Create a link to the database to boot:
-#+BEGIN_SRC shell
-  ln -sv /etc/s6/db/basic /etc/s6/db/current
+  wget https://github.com/Yul3n/init-scripts/releases/download/0.1/init-scripts-0.1.tar.xz
+  tar -xf init-scripts-0.1.tar.xz
+  cd init-scripts 
 #+END_SRC
 Create link to the init script for the kernel:
 #+BEGIN_SRC shell
@@ -3186,25 +2993,9 @@ Create links for poweroff and reboot:
   ln -sv /usr/bin/s6-reboot /sbin/reboot
   ln -sv /usr/bin/s6-poweroff /sbin/poweroff
 #+END_SRC
-Install networking at boot:
-#+BEGIN_SRC shell
-  mkdir -v /lib/services
-  cp -vr net-services/* /lib/services/
-  cp -vr lsb /lib/
-#+END_SRC
 Install web interface helpers:
 #+BEGIN_SRC shell
   cp -v if* /sbin/
-#+END_SRC
-Create the log user:
-#+BEGIN_SRC shell
-  groupadd -g 19 log &&
-  useradd -c "S6 Log User" -d /var/log/aux-serv \
-          -u 19 -g log -s /bin/false log
-#+END_SRC
-Create a directory for services:
-#+BEGIN_SRC shell
-  install -m0755 -o 19 -g 19 -d /var/log/aux-serv
 #+END_SRC
 Create a boot system with an initramfs:
 #+BEGIN_SRC shell
