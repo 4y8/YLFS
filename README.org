@@ -139,7 +139,6 @@
     - [[#gzip-1][Gzip]]
     - [[#make-1][Make]]
     - [[#libpipeline][Libpipeline]]
-    - [[#man-db][Man DB]]
     - [[#cpio][CPIO]]
     - [[#sinit][Sinit]]
     - [[#dhcp][DHCP]]
@@ -2854,31 +2853,6 @@ Build and install:
 #+BEGIN_SRC shell
   make && make install
 #+END_SRC
-*** Man DB
-Source: https://download.savannah.gnu.org/releases/man-db/man-db-2.9.3.tar.xz \\
-Download and extract the sources:
-#+BEGIN_SRC shell
-  wget https://download.savannah.gnu.org/releases/man-db/man-db-2.9.3.tar.xz
-  tar -xf man-db-2.9.3.tar.xz
-  cd man-db-2.9.3
-#+END_SRC
-Configure sources:
-#+BEGIN_SRC shell
-  ./configure                              \
-      --prefix=/usr                        \
-      --docdir=/usr/share/doc/man-db-2.9.3 \
-      --sysconfdir=/etc                    \
-      --disable-setuid                     \
-      --enable-cache-owner=bin             \
-      --with-browser=/usr/bin/lynx         \
-      --with-vgrind=/usr/bin/vgrind        \
-      --with-grap=/usr/bin/grap            \
-      --with-systemdtmpfilesdir=
-#+END_SRC
-Build and install:
-#+BEGIN_SRC shell
-  make && make install
-#+END_SRC
 *** CPIO
 Source: https://ftp.gnu.org/gnu/cpio/cpio-2.13.tar.bz2 \\
 Download and extract the sources:
@@ -2953,13 +2927,13 @@ Exit chroot:
 #+END_SRC
 Re-enter chroot:
 #+BEGIN_SRC shell
-export YLFS=/mnt/ylfs
+  export YLFS=/mnt/ylfs
 
-chroot "$YLFS" /usr/bin/env -i         \
-    HOME=/root TERM="$TERM"            \
-    PS1='(ylfs chroot) \u:\w\$ '       \
-    PATH=/bin:/usr/bin:/sbin:/usr/sbin \
-    /bin/bash --login
+  chroot "$YLFS" /usr/bin/env -i         \
+      HOME=/root TERM="$TERM"            \
+      PS1='(ylfs chroot) \u:\w\$ '       \
+      PATH=/bin:/usr/bin:/sbin:/usr/sbin \
+      /bin/bash --login
 #+END_SRC
 Remove unecessary files:
 #+BEGIN_SRC shell
@@ -2986,12 +2960,12 @@ Download and extract the sources:
 #+END_SRC
 Create link to the init script for the kernel:
 #+BEGIN_SRC shell
-  ln -sv /etc/s6/init /sbin/init
+  ln -sv /usr/local/bin/sinit /sbin/init
 #+END_SRC
-Create links for poweroff and reboot:
+Create files for poweroff and reboot:
 #+BEGIN_SRC shell
-  ln -sv /usr/bin/s6-reboot /sbin/reboot
-  ln -sv /usr/bin/s6-poweroff /sbin/poweroff
+  cp /files/shutdown.sh /sbin/shutdown
+  cp /files/reboot.sh   /sbin/reboot
 #+END_SRC
 Install web interface helpers:
 #+BEGIN_SRC shell
