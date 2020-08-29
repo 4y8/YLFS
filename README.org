@@ -141,7 +141,6 @@
     - [[#libpipeline][Libpipeline]]
     - [[#cpio][CPIO]]
     - [[#sinit][Sinit]]
-    - [[#dhcp][DHCP]]
   - [[#clean-up][Clean up]]
     - [[#stripping][Stripping]]
     - [[#other-clean-up][Other clean up]]
@@ -2762,6 +2761,9 @@ Build and install:
   make CC="cc" HOSTCC="cc" defconfig
   make CC="cc" HOSTCC="cc"
   make CC="cc" HOSTCC="cc" CONFIG_PREFIX="/usr" install
+  mkdir -p "/etc/acpid"
+  install -Dm755 /files/mdev.run /etc/sv/mdev/run
+  install -Dm644 /files/mdev.conf /etc/mdev.conf
 #+END_SRC
 *** Check
 Source: https://github.com/libcheck/check/releases/download/0.15.2/check-0.15.2.tar.gz \\
@@ -2897,14 +2899,6 @@ Build and install:
 #+BEGIN_SRC shell
   make && make install
 #+END_SRC
-*** TODO DHCP
-Source: ftp://ftp.isc.org/isc/dhcp/4.4.2/dhcp-4.4.2.tar.gz \\
-Download and extract the sources:
-#+BEGIN_SRC shell
-  wget ftp://ftp.isc.org/isc/dhcp/4.4.2/dhcp-4.4.2.tar.gz
-  tar -xf dhcp-4.4.2.tar.gz
-  cd dhcp-4.4.2
-#+END_SRC
 ** Clean up
 *** Stripping
 Strip the final system:
@@ -2927,9 +2921,7 @@ Exit chroot:
 #+END_SRC
 Re-enter chroot:
 #+BEGIN_SRC shell
-  export YLFS=/mnt/ylfs
-
-  chroot "$YLFS" /usr/bin/env -i         \
+  chroot /mnt/ylfs /usr/bin/env -        \
       HOME=/root TERM="$TERM"            \
       PS1='(ylfs chroot) \u:\w\$ '       \
       PATH=/bin:/usr/bin:/sbin:/usr/sbin \
