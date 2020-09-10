@@ -180,15 +180,15 @@ Finally, mount the partitions in the =/mnt/ylfs= directory:
 * Preparation
 Prepare the directories for the sources and patches:
 #+BEGIN_SRC shell
-  mkdir -v ${YLFS}/sources
-  mkdir -v ${YLFS}/cross-tools
-  mkdir -v ${YLFS}/tools
-  mkdir -v ${YLFS}/sources/{patches,files,packages}
+  mkdir -v "$YLFS/sources"
+  mkdir -v "$YLFS/cross-tools"
+  mkdir -v "$YLFS/tools"
+  mkdir -v "$YLFS/sources/{patches,files,packages}"
 #+END_SRC
 Link directories:
 #+BEGIN_SRC shell
-  ln -sv "${YLFS}/cross-tools" /
-  ln -sv "${YLFS}/tools" /
+  ln -sv "$YLFS/cross-tools" /
+  ln -sv "$YLFS/tools" /
 #+END_SRC
 Create a new user for the installation of tools:
 #+BEGIN_SRC shell
@@ -198,10 +198,10 @@ Create a new user for the installation of tools:
 #+END_SRC
 Adapt the permissions of the build directories:
 #+BEGIN_SRC shell
-  chown -v  ylfs "{YLFS}/cross-tools"
-  chown -vR ylfs "${YLFS}/sources"
-  chmod -v  a+wt "{YLFS}/sources"
-  chown -v  ylfs "${YLFS}/tools"
+  chown -v  ylfs "$YLFS/cross-tools"
+  chown -vR ylfs "$YLFS/sources"
+  chmod -v  a+wt "$YLFS/sources"
+  chown -v  ylfs "$YLFS/tools"
 #+END_SRC
 Login as the =ylfs= user:
 #+BEGIN_SRC shell
@@ -219,7 +219,7 @@ Add multicore compilation:
 #+END_SRC
 Add future tools to the path:
 #+BEGIN_SRC shell
-  PATH=/cross-tools/bin:/tools/bin:$PATH
+  export PATH="/cross-tools/bin:/tools/bin:$PATH"
 #+END_SRC
 *** CPU configuration
 **** x86_64
@@ -387,9 +387,9 @@ Download and extract the sources:
 #+END_SRC
 Configure cross build:
 #+BEGIN_SRC shell
-  ./configure                     \
-    CROSS_COMPILE="$YLFS_TARGET-" \
-    --prefix=/                    \
+  ./configure                       \
+    CROSS_COMPILE="${YLFS_TARGET}-" \
+    --prefix=/                      \
     --target="$YLFS_TARGET"
 #+END_SRC
 Build and install:
@@ -1276,8 +1276,8 @@ Download and extract the sources:
 Configure sources:
 #+BEGIN_SRC shell
   ./configure               \
-      --build=${YLFS_HOST}  \
-      --host=${YLFS_TARGET} \
+      --build="$YLFS_HOST"  \
+      --host="$YLFS_TARGET" \
       --without-guile       \
       --prefix=/tools
 #+END_SRC
@@ -1673,9 +1673,9 @@ Set build options for armv6 CPUs:
 Save the old linker:
 #+BEGIN_SRC shell
   mv -v /tools/bin/{ld,ld-old}
-  mv -v /tools/${YLFS_TARGET}/bin/{ld,ld-old}
+  mv -v "/tools/$YLFS_TARGET/bin/{ld,ld-old}"
   mv -v /tools/bin/{ld-new,ld}
-  ln -sv /tools/bin/ld /tools/${YLFS_TARGET}/bin/ld
+  ln -sv "/tools/bin/ld /tools/$YLFS_TARGET/bin/ld"
 #+END_SRC
 Fix the compiler specification:
 #+BEGIN_SRC shell
